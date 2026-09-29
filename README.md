@@ -2,6 +2,8 @@
 
 A peer-to-peer web app for playing Magic: the Gathering with friends. No server to run, no rules engine — see `DESIGN.md` for the full design doc and the published mockups for the original visual reference.
 
+**Live: https://eric-moorman.github.io/mtg-player-local/** — deployed for free on GitHub Pages; every push to `main` auto-redeploys via `.github/workflows/deploy.yml`.
+
 ## Run it
 
 ```
