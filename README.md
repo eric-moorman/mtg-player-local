@@ -2,7 +2,7 @@
 
 A peer-to-peer web app for playing Magic: the Gathering with friends. No server to run, no rules engine — see `DESIGN.md` for the full design doc and the published mockups for the original visual reference.
 
-**Live: https://eric-moorman.github.io/mtg-player-local/** — deployed for free on GitHub Pages; every push to `main` auto-redeploys via `.github/workflows/deploy.yml`.
+**Live: https://mtg-player-local.etmoorman15.workers.dev/** — deployed for free on Cloudflare Workers (static assets); every push to `main` auto-redeploys.
 
 ## Run it
 
@@ -13,7 +13,7 @@ npm run dev
 
 Open the printed `localhost` URL. To actually test a game, open it in two browser windows (or send the URL to a friend) — one creates a game and shares the room code, the other joins with it.
 
-`npm run build` produces a static `dist/` site — there's no backend to deploy, since the only third party involved is PeerJS's public broker, used solely for the initial connection handshake.
+`npm run build` produces the static `dist/` site. The one piece of server-side code is `worker/index.ts`, which backs the in-app "Report a bug / request a feature" form (`POST /api/report`) — it commits reports into `reports/`, and `.github/workflows/report-to-issue.yml` turns each one into a labeled GitHub Issue. See `.github/AGENT_INSTRUCTIONS.md` for the convention used to resolve an issue into a PR (on `agent-ready`-labeled issues only, never auto-merged).
 
 ## What's implemented
 
