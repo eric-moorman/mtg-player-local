@@ -43,6 +43,7 @@ function parseReport(raw) {
 ensureLabel("bug", "d73a4a", "A reported bug");
 ensureLabel("enhancement", "a2eeef", "A requested feature");
 ensureLabel("agent-ready", "0e8a16", "Greenlit for the coding agent to attempt");
+ensureLabel("in-review", "fbca04", "The agent opened a PR for this; awaiting human review");
 
 if (!existsSync(ARCHIVE_DIR)) mkdirSync(ARCHIVE_DIR, { recursive: true });
 

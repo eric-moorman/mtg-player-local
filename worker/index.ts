@@ -1,16 +1,17 @@
 /**
- * Cloudflare Pages Function backing POST /api/report.
+ * This Worker only ever handles POST /api/report — every other request is a
+ * static asset served automatically by Cloudflare before it even reaches
+ * this script (see the "assets" config in wrangler.jsonc).
  *
- * This is the one piece of server-side code in an otherwise fully static app,
- * and it deliberately does the least possible: it never talks to the GitHub
+ * It deliberately does the least possible: it never talks to the GitHub
  * Issues API directly. It only commits a small file into reports/ using a
  * token scoped to Contents: read/write on this one repo — a separate GitHub
  * Action (using GitHub's own free per-run token) is what turns that file into
- * a real, labeled Issue. If this endpoint's token ever leaked, the worst case
+ * a real, labeled Issue. If this Worker's token ever leaked, the worst case
  * is "someone can commit junk files here," not "someone can touch the account."
  */
 
-interface Env {
+export interface Env {
   GITHUB_REPORTS_TOKEN: string;
   RATE_LIMIT_KV: KVNamespace;
 }
@@ -32,9 +33,17 @@ const MAX_DESCRIPTION = 4000;
 const MAX_IMAGE_BYTES = 750_000;
 const RATE_LIMIT_PER_HOUR = 5;
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
-  const { request, env } = context;
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === "/api/report" && request.method === "POST") {
+      return handleReport(request, env);
+    }
+    return new Response("Not found", { status: 404 });
+  },
+};
 
+async function handleReport(request: Request, env: Env): Promise<Response> {
   let body: ReportBody;
   try {
     body = await request.json();
@@ -103,7 +112,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   if (!filed) return json({ error: "Failed to file the report. Please try again." }, 502);
 
   return json({ ok: true });
-};
+}
 
 async function putGithubFile(env: Env, path: string, base64Content: string, message: string): Promise<boolean> {
   const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
