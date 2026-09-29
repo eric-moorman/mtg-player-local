@@ -1,0 +1,160 @@
+import { useState } from "react";
+import { useGame } from "../../store/useGame";
+import Quadrants from "./Quadrants";
+import ZoneCardTile from "./ZoneCardTile";
+import CommandZone from "./CommandZone";
+import TurnTracker from "./TurnTracker";
+import LogPanel from "./LogPanel";
+import TokenModal from "./TokenModal";
+import type { PlayerState } from "../../lib/types";
+import "./GameTable.css";
+
+function OpponentBoard({ player }: { player: PlayerState }) {
+  return (
+    <div className="opp">
+      <div className="opp-head">
+        <span>{player.name}</span>
+        <span className="life-pill">{player.life}</span>
+      </div>
+      <CommandZone command={player.zones.command} playerId={player.id} interactive={false} mini />
+      <Quadrants battlefield={player.zones.battlefield} playerId={player.id} interactive={false} mini />
+      <div className="tray-pills">
+        <span className="zone-chip"><b>{player.zones.hand.length}</b> hand</span>
+        <span className="zone-chip"><b>{player.zones.library.length}</b> lib</span>
+        <span className="zone-chip"><b>{player.zones.graveyard.length}</b> gy</span>
+        <span className="zone-chip"><b>{player.zones.exile.length}</b> exile</span>
+      </div>
+    </div>
+  );
+}
+
+export default function GameTable() {
+  const gameState = useGame((s) => s.gameState);
+  const myId = useGame((s) => s.myId);
+  const role = useGame((s) => s.role);
+  const dispatch = useGame((s) => s.dispatch);
+  const sendChat = useGame((s) => s.sendChat);
+  const setScreen = useGame((s) => s.setScreen);
+  const playmats = useGame((s) => s.playmats);
+  const selectedPlaymat = useGame((s) => s.selectedPlaymat);
+  const [libMenuOpen, setLibMenuOpen] = useState(false);
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
+
+  if (role === "offline" || !gameState) {
+    return (
+      <section>
+        <div className="screen-head">
+          <h2>Game Table</h2>
+          <span className="sub">No active game</span>
+        </div>
+        <p className="hint">
+          Create or join a table from the <button className="linklike" onClick={() => setScreen("lobby")}>Lobby</button> first.
+        </p>
+      </section>
+    );
+  }
+
+  if (!gameState.started) {
+    return (
+      <section>
+        <div className="screen-head">
+          <h2>Game Table</h2>
+          <span className="sub">Waiting for the host to start the game</span>
+        </div>
+        <p className="hint">
+          Head back to the <button className="linklike" onClick={() => setScreen("lobby")}>Lobby</button> to pick a deck and get ready.
+        </p>
+      </section>
+    );
+  }
+
+  const me = gameState.players.find((p) => p.id === myId);
+  const opponents = gameState.players.filter((p) => p.id !== myId);
+  const playmat = playmats.find((p) => p.id === selectedPlaymat);
+  const boardStyle = playmat
+    ? playmat.kind === "builtin"
+      ? { backgroundImage: playmat.css }
+      : { backgroundImage: `url(${playmat.image})`, backgroundSize: "cover" as const }
+    : undefined;
+
+  if (!me) {
+    return (
+      <section>
+        <div className="screen-head"><h2>Game Table</h2></div>
+        <p className="hint">You're not seated at this table.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <div className="screen-head">
+        <h2>Game Table</h2>
+        <span className="sub">Battlefields are public — everyone's permanents are visible; hands and libraries stay hidden</span>
+      </div>
+
+      <TurnTracker turn={gameState.turn} players={gameState.players} dispatch={dispatch} />
+
+      {opponents.length > 0 && (
+        <div className="opp-strip">
+          {opponents.map((p) => <OpponentBoard key={p.id} player={p} />)}
+        </div>
+      )}
+
+      <div className="table-main">
+        <div className="board">
+          <div className="seat-head">
+            <span className="name">{me.name} (you)</span>
+            <div className="life-tracker">
+              <button onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life - 1 })}>–</button>
+              <span className="val">{me.life}</span>
+              <button onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life + 1 })}>+</button>
+            </div>
+            <button className="btn" onClick={() => setTokenModalOpen(true)}>+ Token</button>
+          </div>
+
+          <CommandZone command={me.zones.command} playerId={me.id} interactive dispatch={dispatch} />
+
+          <div className="board-field" style={boardStyle}>
+            <Quadrants battlefield={me.zones.battlefield} playerId={me.id} interactive dispatch={dispatch} />
+          </div>
+
+          <div className="tray">
+            <div className="hand-row">
+              {me.zones.hand.map((card) => (
+                <ZoneCardTile key={card.iid} card={card} playerId={me.id} from="hand" dispatch={dispatch} />
+              ))}
+              {me.zones.hand.length === 0 && <span className="hint">Your hand is empty.</span>}
+            </div>
+            <div className="divider" />
+            <div className="tray-pills">
+              <div className="pill-menu-wrap">
+                <button className="zone-chip clickable" onClick={() => setLibMenuOpen((v) => !v)}>
+                  <b>{me.zones.library.length}</b> library
+                </button>
+                {libMenuOpen && (
+                  <div className="ctx-menu lib-menu">
+                    <button onClick={() => { dispatch({ k: "draw", playerId: me.id, count: 1 }); setLibMenuOpen(false); }}>Draw 1</button>
+                    <button onClick={() => { dispatch({ k: "shuffleLibrary", playerId: me.id }); setLibMenuOpen(false); }}>Shuffle</button>
+                    <button onClick={() => { dispatch({ k: "mill", playerId: me.id, count: 1 }); setLibMenuOpen(false); }}>Mill 1</button>
+                  </div>
+                )}
+              </div>
+              <span className="zone-chip"><b>{me.zones.graveyard.length}</b> graveyard</span>
+              <span className="zone-chip"><b>{me.zones.exile.length}</b> exile</span>
+            </div>
+            <div className="divider" />
+            <div className="dice-row">
+              <button className="btn" onClick={() => dispatch({ k: "coinFlip", playerId: me.id })}>🪙 Flip</button>
+              <button className="btn" onClick={() => dispatch({ k: "diceRoll", playerId: me.id, sides: 6 })}>🎲 Roll d6</button>
+            </div>
+          </div>
+        </div>
+
+        <LogPanel log={gameState.log} onSend={sendChat} />
+      </div>
+
+      {tokenModalOpen && <TokenModal playerId={me.id} dispatch={dispatch} onClose={() => setTokenModalOpen(false)} />}
+    </section>
+  );
+}

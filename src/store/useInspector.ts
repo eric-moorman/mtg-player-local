@@ -1,0 +1,14 @@
+import { create } from "zustand";
+import type { CardData } from "../lib/types";
+
+interface InspectorStore {
+  card: CardData | null;
+  open: (card: CardData) => void;
+  close: () => void;
+}
+
+export const useInspector = create<InspectorStore>((set) => ({
+  card: null,
+  open: (card) => (card.name ? set({ card }) : undefined),
+  close: () => set({ card: null }),
+}));

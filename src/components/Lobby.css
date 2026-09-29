@@ -1,0 +1,27 @@
+.lobby-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; max-width: 760px; margin: 0 auto 1.4rem; }
+@media (max-width: 640px) { .lobby-grid { grid-template-columns: 1fr; } }
+.lobby-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem; display: flex; flex-direction: column; gap: 0.8rem; }
+.lobby-card h3 { font-size: 1rem; font-family: var(--font-body); font-weight: 600; }
+.lobby-card p { margin: 0; color: var(--text-dim); font-size: 0.82rem; }
+.room-code {
+  font-family: var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: 0.12em; font-weight: 700; font-size: 1.1rem;
+  background: var(--surface-3); border: 1px dashed var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; text-align: center;
+}
+.host-controls { max-width: 760px; margin: 0 auto 1.4rem; }
+.field-row { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+.field input { width: 6rem; }
+.ready-check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.hint { font-size: 0.78rem; }
+.linklike { background: none; border: none; padding: 0; color: var(--accent-strong); text-decoration: underline; cursor: pointer; font-size: inherit; }
+
+.players { max-width: 760px; margin: 0 auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.players h3 { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; }
+.player-row { display: flex; align-items: center; gap: 0.7rem; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+.player-row .name { font-size: 0.88rem; font-weight: 600; flex: 1; }
+.player-row .dim { color: var(--text-dim); font-weight: 400; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.conn { font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.4rem; }
+.foot-note { text-align: center; color: var(--text-dim); font-size: 0.78rem; max-width: 520px; margin: 0 auto; }
+.lobby-error { text-align: center; color: var(--danger); font-size: 0.85rem; max-width: 520px; margin: 0 auto; }

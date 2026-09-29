@@ -1,0 +1,64 @@
+.catalog-banner {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 0.8rem 1rem; margin-bottom: 1rem;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; font-size: 0.82rem; color: var(--text-dim);
+}
+.deck-error { color: var(--danger); }
+
+.db-grid { display: grid; grid-template-columns: 190px 1fr 250px; gap: 1.1rem; }
+@media (max-width: 900px) { .db-grid { grid-template-columns: 1fr; } }
+.db-col { display: flex; flex-direction: column; gap: 0.8rem; }
+.filter-block label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.35rem; }
+.pips { display: flex; gap: 0.4rem; }
+.range-row { display: flex; align-items: center; gap: 0.4rem; }
+.range-row input { width: 0; flex: 1; min-width: 0; }
+.range-dash { color: var(--text-dim); flex-shrink: 0; }
+.pip { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; border: 2px solid var(--border); cursor: pointer; }
+.pip.active { border-color: var(--accent); }
+
+.deck-list-mini { display: flex; flex-direction: column; gap: 0.3rem; }
+.deck-list-mini-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; }
+.deck-list-mini-row .linklike { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.deck-list-mini-price { color: var(--text-dim); font-size: 0.74rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.mini-x { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; flex-shrink: 0; }
+.linklike { background: none; border: none; padding: 0; color: var(--accent-strong); text-decoration: underline; cursor: pointer; font-size: inherit; text-align: left; }
+
+.card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; align-content: start; }
+.cardtile { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-3); cursor: pointer; }
+.cardtile img { width: 100%; display: block; }
+.qty {
+  position: absolute; bottom: 6px; right: 6px; background: rgba(20, 18, 12, 0.78); color: #fff; border-radius: 999px;
+  font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; padding: 0.2rem; display: flex; align-items: center; gap: 0.15rem;
+}
+.qty button {
+  background: none; border: none; color: #fff; font-size: 1.05rem; cursor: pointer; line-height: 1;
+  width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.qty button:hover { background: rgba(255, 255, 255, 0.22); }
+.qty span.n { min-width: 1.1rem; text-align: center; }
+.price-badge {
+  position: absolute; top: 6px; left: 6px; background: rgba(20, 18, 12, 0.72); color: #fff;
+  border-radius: 999px; font-size: 0.66rem; font-variant-numeric: tabular-nums; padding: 0.15rem 0.5rem;
+}
+
+.decklist { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.deck-name-input { font-weight: 600; }
+.decklist .count { color: var(--text-dim); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.decklist .deck-price { color: var(--accent-strong); font-weight: 600; }
+.commander-summary { font-size: 0.76rem; color: var(--accent-strong); font-weight: 600; }
+.decklist ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; max-height: 280px; overflow-y: auto; }
+.decklist li { display: flex; align-items: flex-start; font-size: 0.82rem; gap: 0.4rem; }
+.decklist li .n { font-variant-numeric: tabular-nums; color: var(--text-dim); width: 1.6rem; display: inline-block; }
+.li-name { flex: 1; min-width: 0; }
+.li-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.05rem; flex-shrink: 0; }
+.crown-btn {
+  background: none; border: none; color: var(--border); cursor: pointer; font-size: 0.9rem; line-height: 1;
+  padding: 0; width: 1.1rem; flex-shrink: 0;
+}
+.crown-btn.active { color: var(--accent); }
+.crown-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+.li-cost { font-size: 0.82rem; }
+.li-price { font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.decklist .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.import-box { display: flex; flex-direction: column; gap: 0.5rem; }
+.import-box textarea { font-family: inherit; font-size: 0.82rem; background: var(--surface-3); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: var(--text); }
+.hint { color: var(--text-dim); font-size: 0.82rem; }

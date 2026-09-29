@@ -1,0 +1,22 @@
+.inspect-overlay {
+  position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem; z-index: 100;
+}
+.inspect-card {
+  position: relative; display: flex; gap: 1.2rem; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 1.3rem; max-width: 640px; width: 100%; box-shadow: 0 30px 60px -20px var(--shadow);
+}
+.inspect-card img { width: 220px; border-radius: 10px; flex-shrink: 0; }
+@media (max-width: 560px) { .inspect-card { flex-direction: column; } .inspect-card img { width: 180px; margin: 0 auto; } }
+.inspect-info { display: flex; flex-direction: column; gap: 0.55rem; overflow-y: auto; max-height: 68vh; min-width: 0; }
+.inspect-info h3 { font-size: 1.25rem; }
+.inspect-meta { display: flex; gap: 0.7rem; flex-wrap: wrap; color: var(--text-dim); font-size: 0.8rem; }
+.inspect-text { font-size: 0.86rem; white-space: pre-line; margin: 0; }
+.inspect-keywords { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.kw-chip { background: var(--accent-soft); color: var(--accent-strong); font-size: 0.66rem; font-weight: 700; border-radius: 999px; padding: 0.18rem 0.6rem; text-transform: uppercase; letter-spacing: 0.03em; cursor: help; }
+.inspect-pt { font-weight: 800; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.inspect-close {
+  position: absolute; top: 0.6rem; right: 0.6rem; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--surface-2); cursor: pointer; font-size: 1rem; line-height: 1; color: var(--text);
+}
+.inspect-close:hover { background: var(--surface-3); }

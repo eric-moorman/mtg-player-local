@@ -1,0 +1,15 @@
+.settings-grid { display: flex; flex-direction: column; gap: 1.4rem; max-width: 720px; }
+.section-label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.6rem; }
+.swatch-row { display: flex; gap: 0.9rem; flex-wrap: wrap; }
+.swatch { width: 110px; display: flex; flex-direction: column; gap: 0.4rem; cursor: pointer; background: none; border: none; padding: 0; }
+.swatch .tile { height: 72px; border-radius: 10px; border: 2px solid transparent; }
+.swatch.selected .tile { border-color: var(--accent); }
+.swatch .lbl { font-size: 0.75rem; color: var(--text-dim); text-align: center; }
+.swatch.upload .tile { border: 2px dashed var(--border); background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: var(--text-dim); }
+.field-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 0.35rem; }
+.field label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+.color-row { display: flex; gap: 0.5rem; }
+.color-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.color-dot.selected { border-color: var(--text); }
+.small-note { color: var(--text-dim); font-size: 0.8rem; max-width: 56ch; }
