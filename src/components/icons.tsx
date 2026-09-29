@@ -40,6 +40,15 @@ export function IconSettings({ size = 18 }: IconProps) {
   );
 }
 
+export function IconFlag({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" {...base}>
+      <path d="M4.5 2.5v15" />
+      <path d="M4.5 3.3c2-.9 3.6-.9 5.4 0 1.8.9 3.4.9 5.4 0v7.4c-2 .9-3.6.9-5.4 0-1.8-.9-3.4-.9-5.4 0Z" />
+    </svg>
+  );
+}
+
 export function IconChevron({ size = 14, direction = "left" }: IconProps & { direction?: "left" | "right" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" {...base} style={{ transform: direction === "right" ? "scaleX(-1)" : undefined }}>

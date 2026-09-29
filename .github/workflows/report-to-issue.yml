@@ -1,0 +1,34 @@
+name: Report to Issue
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "reports/*.md"
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  file-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Create issues from new reports
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/report-to-issue.mjs
+
+      - name: Archive processed reports
+        run: |
+          git config user.name "kitchen-table-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A reports
+          git diff --cached --quiet || git commit -m "Archive processed report(s)"
+          git push

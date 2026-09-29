@@ -1,0 +1,31 @@
+.report-modal .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: 0.6rem;
+}
+.report-modal .field input,
+.report-modal .field textarea {
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  resize: vertical;
+}
+.report-type-toggle { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; }
+.report-preview { margin-top: 0.5rem; max-width: 100%; max-height: 160px; border-radius: 8px; border: 1px solid var(--border); }
+.report-error { color: var(--danger); font-size: 0.78rem; }
+
+.honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}

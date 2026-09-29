@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGame, type Screen } from "../store/useGame";
-import { IconChevron, IconDeck, IconLobby, IconSettings, IconTable } from "./icons";
+import { IconChevron, IconDeck, IconFlag, IconLobby, IconSettings, IconTable } from "./icons";
+import ReportModal from "./ReportModal";
 
 const NAV: { id: Screen; label: string; icon: (props: { size?: number }) => JSX.Element }[] = [
   { id: "lobby", label: "Lobby", icon: IconLobby },
@@ -16,6 +17,7 @@ export default function Sidebar() {
   const setScreen = useGame((s) => s.setScreen);
   const matchActive = useGame((s) => s.gameState?.started ?? false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(STORAGE_KEY) === "1");
+  const [reportOpen, setReportOpen] = useState(false);
   const items = NAV.filter((r) => r.id !== "table" || matchActive);
 
   function toggle() {
@@ -46,6 +48,13 @@ export default function Sidebar() {
           </button>
         );
       })}
+
+      <button className="sidebar-btn sidebar-report" onClick={() => setReportOpen(true)} title={collapsed ? "Report a bug / request a feature" : undefined}>
+        <span className="sidebar-icon"><IconFlag /></span>
+        <span className="sidebar-label">Feedback</span>
+      </button>
+
+      {reportOpen && <ReportModal onClose={() => setReportOpen(false)} />}
     </nav>
   );
 }
