@@ -19,6 +19,8 @@ export default function SealedSetup() {
   const loadAvailableSets = useSealed((s) => s.loadAvailableSets);
   const allowedSets = useSealed((s) => s.allowedSets);
   const toggleSet = useSealed((s) => s.toggleSet);
+  const selectAllSets = useSealed((s) => s.selectAllSets);
+  const clearAllSets = useSealed((s) => s.clearAllSets);
   const loadError = useSealed((s) => s.loadError);
   const startSession = useSealed((s) => s.startSession);
 
@@ -75,7 +77,13 @@ export default function SealedSetup() {
         </div>
 
         <div className="sealed-setup-col sealed-sets-col">
-          <label>Allowed sets ({allowedSets.length} selected)</label>
+          <div className="sealed-sets-head">
+            <label>Allowed sets ({allowedSets.length} selected)</label>
+            <div className="sealed-sets-bulk">
+              <button className="btn" onClick={selectAllSets} disabled={availableSets.length === 0}>Select all</button>
+              <button className="btn" onClick={clearAllSets} disabled={allowedSets.length === 0}>Clear</button>
+            </div>
+          </div>
           <div className="sealed-set-list">
             {availableSets.length === 0 && <p className="hint">Loading sets from Scryfall…</p>}
             {availableSets.map((s) => (

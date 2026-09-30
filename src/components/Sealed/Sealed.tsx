@@ -6,6 +6,9 @@ import "./Sealed.css";
 
 export default function Sealed() {
   const phase = useSealed((s) => s.phase);
+  const activeTab = useSealed((s) => s.activeTab);
+  const setActiveTab = useSealed((s) => s.setActiveTab);
+  const pool = useSealed((s) => s.pool);
 
   if (phase === "loading") {
     return (
@@ -15,7 +18,24 @@ export default function Sealed() {
       </section>
     );
   }
-  if (phase === "session") return <SealedSession />;
-  if (phase === "building") return <PoolBuilder />;
-  return <SealedSetup />;
+
+  if (phase === "setup") return <SealedSetup />;
+
+  return (
+    <section>
+      <div className="screen-head">
+        <h2>Sealed Pool</h2>
+        <span className="sub">{activeTab === "acquire" ? "Spend your budget, then build a deck from whatever you end up with" : "Choose what actually goes in the deck from your pool"}</span>
+      </div>
+      <div className="sealed-tabs">
+        <button className={"sealed-tab" + (activeTab === "acquire" ? " active" : "")} onClick={() => setActiveTab("acquire")}>
+          Open Packs / Buy
+        </button>
+        <button className={"sealed-tab" + (activeTab === "build" ? " active" : "")} onClick={() => setActiveTab("build")} disabled={pool.length === 0}>
+          Build Deck
+        </button>
+      </div>
+      {activeTab === "acquire" ? <SealedSession /> : <PoolBuilder />}
+    </section>
+  );
 }

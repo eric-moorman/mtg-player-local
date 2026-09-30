@@ -5,7 +5,10 @@
 .sealed-config-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; font-size: 0.82rem; }
 .sealed-config-row input { width: 5rem; }
 
-.sealed-sets-col > label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
+.sealed-sets-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.5rem; }
+.sealed-sets-head label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+.sealed-sets-bulk { display: flex; gap: 0.4rem; }
+.sealed-sets-bulk .btn { padding: 0.3rem 0.6rem; font-size: 0.72rem; }
 .sealed-set-list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.15rem; border: 1px solid var(--border); border-radius: 10px; padding: 0.5rem; background: var(--surface-2); }
 .sealed-set-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; padding: 0.25rem 0.3rem; border-radius: 6px; }
 .sealed-set-row:hover { background: var(--surface-3); }
@@ -58,6 +61,11 @@
 .pack-rarity-badge.rarity-rare { background: #b8962e; }
 .pack-rarity-badge.rarity-mythic { background: #c1502e; }
 
-.sealed-pool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.7rem; margin-bottom: 1.2rem; max-height: 60vh; overflow-y: auto; }
-.sealed-save-bar { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
-.sealed-save-bar input { flex: 1; min-width: 180px; }
+.sealed-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.sealed-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.6rem 0.9rem; font-size: 0.88rem; color: var(--text-dim); cursor: pointer; margin-bottom: -1px; }
+.sealed-tab:hover { color: var(--text); }
+.sealed-tab.active { color: var(--accent-strong); border-bottom-color: var(--accent); font-weight: 600; }
+.sealed-tab:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sealed-build-grid { grid-template-columns: 1fr 280px; }
+.sealed-build-grid .card-grid { max-height: 65vh; overflow-y: auto; }

@@ -19,7 +19,7 @@ export default function SealedSession() {
   const openPack = useSealed((s) => s.openPack);
   const buyCard = useSealed((s) => s.buyCard);
   const removeFromPool = useSealed((s) => s.removeFromPool);
-  const finishAcquiring = useSealed((s) => s.finishAcquiring);
+  const setActiveTab = useSealed((s) => s.setActiveTab);
   const openInspector = useInspector((s) => s.open);
 
   const [query, setQuery] = useState("");
@@ -40,16 +40,11 @@ export default function SealedSession() {
   }, [query, allowedSets, setPools]);
 
   return (
-    <section>
-      <div className="screen-head">
-        <h2>Sealed Pool</h2>
-        <span className="sub">Spend your budget, then build a deck from whatever you end up with</span>
-      </div>
-
+    <>
       <div className="sealed-budget-bar">
         <span>Remaining: <b>{formatPrice(Math.max(0, remaining))}</b> of {formatPrice(budget)}</span>
         <span className="sealed-pool-count">{pool.length} cards in pool</span>
-        <button className="btn primary" onClick={finishAcquiring} disabled={pool.length === 0}>Build deck from pool →</button>
+        <button className="btn primary" onClick={() => setActiveTab("build")} disabled={pool.length === 0}>Build deck from pool →</button>
       </div>
 
       <div className="sealed-session-grid">
@@ -108,6 +103,6 @@ export default function SealedSession() {
       </div>
 
       <PackOpenReveal />
-    </section>
+    </>
   );
 }

@@ -23,7 +23,8 @@ function saveConfig(config: SealedConfig) {
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
 }
 
-export type SealedPhase = "setup" | "loading" | "session" | "building";
+export type SealedPhase = "setup" | "loading" | "active";
+export type SealedTab = "acquire" | "build";
 
 export interface PoolCard {
   uid: string;
@@ -34,6 +35,9 @@ export interface PoolCard {
 
 interface SealedStore {
   phase: SealedPhase;
+  activeTab: SealedTab;
+  setActiveTab: (tab: SealedTab) => void;
+
   config: SealedConfig;
   setConfig: (patch: Partial<SealedConfig>) => void;
   setRarityWeight: (rarity: keyof RarityWeights, value: number) => void;
@@ -46,6 +50,8 @@ interface SealedStore {
   loadAvailableSets: () => Promise<void>;
   allowedSets: string[];
   toggleSet: (code: string) => void;
+  selectAllSets: () => void;
+  clearAllSets: () => void;
 
   setPools: Record<string, CardData[]>;
   loadError: string | null;
@@ -53,19 +59,29 @@ interface SealedStore {
   pool: PoolCard[];
   lastOpened: { setCode: string; cards: CardData[] } | null;
 
+  /** Card name -> quantity chosen for the deck (bounded by how many of that name are in the pool). */
+  deckSelections: Record<string, number>;
+  addToDeck: (name: string) => void;
+  removeFromDeck: (name: string) => void;
+
   startSession: () => Promise<void>;
   openPack: (setCode: string) => void;
   dismissReveal: () => void;
   buyCard: (card: CardData, setCode: string) => void;
   removeFromPool: (uid: string) => void;
-  finishAcquiring: () => void;
-  backToSession: () => void;
   saveAsDeck: (name: string) => Promise<string>;
   reset: () => void;
 }
 
+function poolQtyByName(pool: PoolCard[], name: string): number {
+  return pool.reduce((n, p) => n + (p.card.name === name ? 1 : 0), 0);
+}
+
 export const useSealed = create<SealedStore>((set, get) => ({
   phase: "setup",
+  activeTab: "acquire",
+  setActiveTab: (tab) => set({ activeTab: tab }),
+
   config: loadConfig(),
   setConfig: (patch) =>
     set((s) => {
@@ -95,12 +111,32 @@ export const useSealed = create<SealedStore>((set, get) => ({
     set((s) => ({
       allowedSets: s.allowedSets.includes(code) ? s.allowedSets.filter((c) => c !== code) : [...s.allowedSets, code],
     })),
+  selectAllSets: () => set((s) => ({ allowedSets: s.availableSets.map((set) => set.code) })),
+  clearAllSets: () => set({ allowedSets: [] }),
 
   setPools: {},
   loadError: null,
 
   pool: [],
   lastOpened: null,
+
+  deckSelections: {},
+  addToDeck: (name) =>
+    set((s) => {
+      const available = poolQtyByName(s.pool, name);
+      const current = s.deckSelections[name] ?? 0;
+      if (current >= available) return {};
+      return { deckSelections: { ...s.deckSelections, [name]: current + 1 } };
+    }),
+  removeFromDeck: (name) =>
+    set((s) => {
+      const current = s.deckSelections[name] ?? 0;
+      if (current <= 0) return {};
+      const next = { ...s.deckSelections };
+      if (current <= 1) delete next[name];
+      else next[name] = current - 1;
+      return { deckSelections: next };
+    }),
 
   startSession: async () => {
     const { allowedSets } = get();
@@ -109,13 +145,20 @@ export const useSealed = create<SealedStore>((set, get) => ({
       return;
     }
     set({ phase: "loading", loadError: null });
+    const setPools: Record<string, CardData[]> = {};
     try {
-      const entries = await Promise.all(allowedSets.map(async (code) => [code, await scryfall.fetchSetCardPool(code)] as const));
-      const setPools: Record<string, CardData[]> = {};
-      for (const [code, cards] of entries) setPools[code] = cards;
-      set({ setPools, phase: "session", spent: 0, pool: [] });
+      // Sequential, not Promise.all: keeps every request properly spaced through
+      // politeFetch's queue and means a failure is attributable to one specific set.
+      for (const code of allowedSets) {
+        setPools[code] = await scryfall.fetchSetCardPool(code);
+      }
+      set({ setPools, phase: "active", activeTab: "acquire", spent: 0, pool: [], deckSelections: {} });
     } catch {
-      set({ phase: "setup", loadError: "Couldn't load one or more sets from Scryfall. Please try again." });
+      const name = get().availableSets.find((s) => !setPools[s.code] && allowedSets.includes(s.code))?.name;
+      set({
+        phase: "setup",
+        loadError: name ? `Couldn't load "${name}" from Scryfall. Please try again.` : "Couldn't load one of the sets from Scryfall. Please try again.",
+      });
     }
   },
 
@@ -147,17 +190,22 @@ export const useSealed = create<SealedStore>((set, get) => ({
       const entry = s.pool.find((p) => p.uid === uid);
       if (!entry) return {};
       const refund = entry.via === "buy" ? entry.card.price_usd ?? 0 : 0;
-      return { pool: s.pool.filter((p) => p.uid !== uid), spent: s.spent - refund };
+      const nextPool = s.pool.filter((p) => p.uid !== uid);
+      // Clamp the deck selection for this name in case the removed copy was one that had been chosen for the deck.
+      const available = poolQtyByName(nextPool, entry.card.name);
+      const deckSelections = { ...s.deckSelections };
+      if ((deckSelections[entry.card.name] ?? 0) > available) {
+        if (available <= 0) delete deckSelections[entry.card.name];
+        else deckSelections[entry.card.name] = available;
+      }
+      return { pool: nextPool, spent: s.spent - refund, deckSelections };
     }),
 
-  finishAcquiring: () => set({ phase: "building" }),
-  backToSession: () => set({ phase: "session" }),
-
   saveAsDeck: async (name) => {
-    const { pool } = get();
-    const counts = new Map<string, number>();
-    for (const p of pool) counts.set(p.card.name, (counts.get(p.card.name) ?? 0) + 1);
-    const cards: DeckCard[] = Array.from(counts.entries()).map(([cardName, qty]) => ({ name: cardName, qty }));
+    const { deckSelections } = get();
+    const cards: DeckCard[] = Object.entries(deckSelections)
+      .filter(([, qty]) => qty > 0)
+      .map(([cardName, qty]) => ({ name: cardName, qty }));
     const deck: Deck = { id: newId(), name: name.trim() || "Sealed pool", cards, updatedAt: Date.now() };
     await saveDeck(deck);
     return deck.id;
@@ -166,6 +214,7 @@ export const useSealed = create<SealedStore>((set, get) => ({
   reset: () =>
     set({
       phase: "setup",
+      activeTab: "acquire",
       budget: 50,
       spent: 0,
       allowedSets: [],
@@ -173,5 +222,6 @@ export const useSealed = create<SealedStore>((set, get) => ({
       pool: [],
       lastOpened: null,
       loadError: null,
+      deckSelections: {},
     }),
 }));
