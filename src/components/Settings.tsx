@@ -40,7 +40,7 @@ function AccountSection() {
 
   if (status === "checking") {
     return (
-      <div>
+      <div className="account-card">
         <label className="section-label">Account</label>
         <p className="small-note">Checking sign-in status…</p>
       </div>
@@ -49,7 +49,7 @@ function AccountSection() {
 
   if (user) {
     return (
-      <div>
+      <div className="account-card">
         <label className="section-label">Account</label>
         <p className="small-note">
           Synced as <strong>{user.username}</strong> — decks, identity, playmat, and sealed-pool settings follow you to any
@@ -63,12 +63,12 @@ function AccountSection() {
   }
 
   return (
-    <div>
+    <div className="account-card">
       <label className="section-label">Account</label>
       <p className="small-note">
         Optional — everything works fine without one. Sign in to sync decks and preferences across devices.
       </p>
-      <form className="field-row" onSubmit={submit}>
+      <form className="field-row account-form" onSubmit={submit}>
         <div className="field">
           <label>Username</label>
           <input

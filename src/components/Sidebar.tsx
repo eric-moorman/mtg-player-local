@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGame, type Screen } from "../store/useGame";
-import { IconChevron, IconDeck, IconFlag, IconLobby, IconPack, IconSettings, IconTable } from "./icons";
+import { useAuth } from "../store/useAuth";
+import { IconChevron, IconDeck, IconFlag, IconLobby, IconPack, IconSettings, IconTable, IconUser } from "./icons";
 import ReportModal from "./ReportModal";
 
 const NAV: { id: Screen; label: string; icon: (props: { size?: number }) => JSX.Element }[] = [
@@ -17,6 +18,7 @@ export default function Sidebar() {
   const screen = useGame((s) => s.screen);
   const setScreen = useGame((s) => s.setScreen);
   const matchActive = useGame((s) => s.gameState?.started ?? false);
+  const user = useAuth((s) => s.user);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(STORAGE_KEY) === "1");
   const [reportOpen, setReportOpen] = useState(false);
   const items = NAV.filter((r) => r.id !== "table" || matchActive);
@@ -50,10 +52,21 @@ export default function Sidebar() {
         );
       })}
 
-      <button className="sidebar-btn sidebar-report" onClick={() => setReportOpen(true)} title={collapsed ? "Report a bug / request a feature" : undefined}>
-        <span className="sidebar-icon"><IconFlag /></span>
-        <span className="sidebar-label">Feedback</span>
-      </button>
+      <div className="sidebar-bottom">
+        <button
+          className={"sidebar-btn sidebar-account" + (user ? " signed-in" : "")}
+          onClick={() => setScreen("settings")}
+          title={user ? `Signed in as ${user.username} — manage in Settings` : "Not signed in — sign in under Settings to sync your decks and settings"}
+        >
+          <span className="sidebar-icon"><IconUser /></span>
+          <span className="sidebar-label">{user ? `Signed in: ${user.username}` : "Not signed in"}</span>
+        </button>
+
+        <button className="sidebar-btn sidebar-report" onClick={() => setReportOpen(true)} title={collapsed ? "Report a bug / request a feature" : undefined}>
+          <span className="sidebar-icon"><IconFlag /></span>
+          <span className="sidebar-label">Feedback</span>
+        </button>
+      </div>
 
       {reportOpen && <ReportModal onClose={() => setReportOpen(false)} />}
     </nav>
