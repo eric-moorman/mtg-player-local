@@ -1,58 +1,35 @@
 import { useState } from "react";
+import { useDrag } from "../../store/useDrag";
 import ZoneBrowser from "./ZoneBrowser";
 import type { CardInstance, GameAction, ZoneName } from "../../lib/types";
-
-interface DragPayload {
-  iid: string;
-  from: ZoneName;
-  playerId: string;
-}
-
-function parseDrag(e: React.DragEvent): DragPayload | null {
-  const raw = e.dataTransfer.getData("application/x-kitchentable-card");
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
 
 interface StackProps {
   label: string;
   count: number;
   onClick?: () => void;
-  onDropCard?: (payload: DragPayload) => void;
+  /** data-dropzone value for this stack, if cards can be dropped here (see src/lib/pointerDrag.ts). */
+  dropZone?: string;
   menu?: (close: () => void) => React.ReactNode;
 }
 
-function ZoneStack({ label, count, onClick, onDropCard, menu }: StackProps) {
-  const [dragOver, setDragOver] = useState(false);
+function ZoneStack({ label, count, onClick, dropZone, menu }: StackProps) {
+  const [hovering, setHovering] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const dragActive = useDrag((s) => s.active);
 
   return (
     <div className={"zone-stack" + (onClick ? " clickable" : "")}>
       <div
-        className={"zone-stack-face" + (dragOver ? " drag-over" : "")}
+        className={"zone-stack-face" + (dragActive && hovering ? " drag-over" : "")}
         onClick={onClick}
-        onDragOver={onDropCard ? (e) => { e.preventDefault(); setDragOver(true); } : undefined}
-        onDragLeave={onDropCard ? () => setDragOver(false) : undefined}
-        onDrop={
-          onDropCard
-            ? (e) => {
-                e.preventDefault();
-                setDragOver(false);
-                const payload = parseDrag(e);
-                if (payload) onDropCard(payload);
-              }
-            : undefined
-        }
+        data-dropzone={dropZone}
+        onMouseEnter={dropZone ? () => setHovering(true) : undefined}
+        onMouseLeave={dropZone ? () => setHovering(false) : undefined}
       >
         <span className="zone-stack-count">{count}</span>
         {menu && (
           <button
             className="menubtn"
-            draggable={false}
             onClick={(e) => {
               e.stopPropagation();
               setMenuOpen((v) => !v);
@@ -65,7 +42,7 @@ function ZoneStack({ label, count, onClick, onDropCard, menu }: StackProps) {
       </div>
       <div className="zone-stack-label">{label}</div>
       {menuOpen && menu && (
-        <div className="ctx-menu zone-stack-menu" draggable={false} onClick={(e) => e.stopPropagation()}>
+        <div className="ctx-menu zone-stack-menu" onClick={(e) => e.stopPropagation()}>
           {menu(() => setMenuOpen(false))}
         </div>
       )}
@@ -83,13 +60,6 @@ interface Props {
 
 export default function ZoneStacks({ playerId, library, graveyard, exile, dispatch }: Props) {
   const [browsing, setBrowsing] = useState<ZoneName | null>(null);
-
-  function moveFromDrag(payload: DragPayload, to: "graveyard" | "exile") {
-    // Dropping a card onto the zone it's already in would otherwise re-run the
-    // "enter battlefield" reset logic for nothing, or just be a no-op elsewhere.
-    if (payload.from === to) return;
-    dispatch({ k: "moveCard", playerId, iid: payload.iid, from: payload.from, to });
-  }
 
   const zoneCards: Record<"library" | "graveyard" | "exile", CardInstance[]> = { library, graveyard, exile };
   const browseTitle = browsing === "library" ? "Library" : browsing === "graveyard" ? "Graveyard" : "Exile";
@@ -109,8 +79,8 @@ export default function ZoneStacks({ playerId, library, graveyard, exile, dispat
           </>
         )}
       />
-      <ZoneStack label="Graveyard" count={graveyard.length} onClick={() => setBrowsing("graveyard")} onDropCard={(p) => moveFromDrag(p, "graveyard")} />
-      <ZoneStack label="Exile" count={exile.length} onClick={() => setBrowsing("exile")} onDropCard={(p) => moveFromDrag(p, "exile")} />
+      <ZoneStack label="Graveyard" count={graveyard.length} onClick={() => setBrowsing("graveyard")} dropZone="graveyard" />
+      <ZoneStack label="Exile" count={exile.length} onClick={() => setBrowsing("exile")} dropZone="exile" />
 
       {browsing && (
         <ZoneBrowser

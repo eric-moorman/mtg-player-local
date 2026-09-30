@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { PermanentStack } from "../../lib/cardRules";
 import { primaryCounterBadge, getQuadrant } from "../../lib/cardRules";
 import { useInspector } from "../../store/useInspector";
+import { startPointerDrag } from "../../lib/pointerDrag";
 import type { GameAction, ZoneName } from "../../lib/types";
 
 interface Props {
@@ -45,13 +46,14 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
       className={"permtile" + (mini ? " mini" : "") + (representative.tapped ? " tapped" : "")}
       onContextMenu={draggable ? openMenu : undefined}
     >
-      {/* Drag source is this inner wrapper only — see ZoneCardTile.tsx for why the
-          buttons below must live outside a draggable ancestor's subtree. */}
       <div
         className="tile-art"
         onClick={() => openInspector(representative)}
-        draggable={draggable}
-        onDragStart={draggable ? (e) => e.dataTransfer.setData("application/x-kitchentable-card", JSON.stringify({ iid: targetIid, from: "battlefield", playerId })) : undefined}
+        onMouseDown={
+          draggable
+            ? (e) => startPointerDrag(e, (zone) => { if (zone !== "battlefield") dispatch!({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: zone as ZoneName }); })
+            : undefined
+        }
       >
         {representative.image_small ? (
           <img src={representative.image_small} alt={representative.name} />

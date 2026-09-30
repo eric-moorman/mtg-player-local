@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGame } from "../../store/useGame";
+import { useDrag } from "../../store/useDrag";
 import Quadrants from "./Quadrants";
 import ZoneCardTile from "./ZoneCardTile";
 import CommandZone from "./CommandZone";
@@ -7,18 +8,8 @@ import ZoneStacks from "./ZoneStacks";
 import TurnTracker from "./TurnTracker";
 import LogPanel from "./LogPanel";
 import TokenModal from "./TokenModal";
-import type { PlayerState, ZoneName } from "../../lib/types";
+import type { PlayerState } from "../../lib/types";
 import "./GameTable.css";
-
-function parseCardDrag(e: React.DragEvent): { iid: string; from: ZoneName; playerId: string } | null {
-  const raw = e.dataTransfer.getData("application/x-kitchentable-card");
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
 
 function OpponentBoard({ player }: { player: PlayerState }) {
   return (
@@ -59,7 +50,8 @@ export default function GameTable() {
   const playmats = useGame((s) => s.playmats);
   const selectedPlaymat = useGame((s) => s.selectedPlaymat);
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
-  const [dragOverBoard, setDragOverBoard] = useState(false);
+  const [hoveringBoard, setHoveringBoard] = useState(false);
+  const dragActive = useDrag((s) => s.active);
 
   if (role === "offline" || !gameState) {
     return (
@@ -136,18 +128,11 @@ export default function GameTable() {
           </div>
 
           <div
-            className={"board-field" + (dragOverBoard ? " drag-over" : "")}
+            className={"board-field" + (dragActive && hoveringBoard ? " drag-over" : "")}
             style={boardStyle}
-            onDragOver={(e) => { e.preventDefault(); setDragOverBoard(true); }}
-            onDragLeave={() => setDragOverBoard(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOverBoard(false);
-              const payload = parseCardDrag(e);
-              if (payload && payload.from !== "battlefield") {
-                dispatch({ k: "moveCard", playerId: me.id, iid: payload.iid, from: payload.from, to: "battlefield" });
-              }
-            }}
+            data-dropzone="battlefield"
+            onMouseEnter={() => setHoveringBoard(true)}
+            onMouseLeave={() => setHoveringBoard(false)}
           >
             <Quadrants battlefield={me.zones.battlefield} playerId={me.id} interactive dispatch={dispatch} />
           </div>

@@ -41,6 +41,8 @@
   cursor: pointer; background: var(--surface-3);
 }
 .tile-art { display: block; }
+body.kt-dragging { cursor: grabbing; user-select: none; }
+body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
 .permtile img, .handtile img { width: 100%; display: block; }
 .permtile.mini, .handtile.mini { width: 44px; }
 .permtile-placeholder { width: 74px; aspect-ratio: 5/7; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-dim); background: var(--surface-3); }
