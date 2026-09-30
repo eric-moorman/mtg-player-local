@@ -43,16 +43,22 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
   return (
     <div
       className={"permtile" + (mini ? " mini" : "") + (representative.tapped ? " tapped" : "")}
-      onClick={() => openInspector(representative)}
       onContextMenu={draggable ? openMenu : undefined}
-      draggable={draggable}
-      onDragStart={draggable ? (e) => e.dataTransfer.setData("application/x-kitchentable-card", JSON.stringify({ iid: targetIid, from: "battlefield", playerId })) : undefined}
     >
-      {representative.image_small ? (
-        <img src={representative.image_small} alt={representative.name} />
-      ) : (
-        <div className="permtile-placeholder">{representative.name.slice(0, 1).toUpperCase()}</div>
-      )}
+      {/* Drag source is this inner wrapper only — see ZoneCardTile.tsx for why the
+          buttons below must live outside a draggable ancestor's subtree. */}
+      <div
+        className="tile-art"
+        onClick={() => openInspector(representative)}
+        draggable={draggable}
+        onDragStart={draggable ? (e) => e.dataTransfer.setData("application/x-kitchentable-card", JSON.stringify({ iid: targetIid, from: "battlefield", playerId })) : undefined}
+      >
+        {representative.image_small ? (
+          <img src={representative.image_small} alt={representative.name} />
+        ) : (
+          <div className="permtile-placeholder">{representative.name.slice(0, 1).toUpperCase()}</div>
+        )}
+      </div>
       {instances.length > 1 && <span className="stackbadge">×{instances.length}</span>}
       {badge && <span className="counterbadge">{badge}</span>}
 

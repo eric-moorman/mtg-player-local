@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { GameAction, ZoneName } from "../../lib/types";
+import ZoneBrowser from "./ZoneBrowser";
+import type { CardInstance, GameAction, ZoneName } from "../../lib/types";
 
 interface DragPayload {
   iid: string;
@@ -22,45 +23,66 @@ interface StackProps {
   count: number;
   onClick?: () => void;
   onDropCard?: (payload: DragPayload) => void;
+  menu?: (close: () => void) => React.ReactNode;
 }
 
-function ZoneStack({ label, count, onClick, onDropCard }: StackProps) {
+function ZoneStack({ label, count, onClick, onDropCard, menu }: StackProps) {
   const [dragOver, setDragOver] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <div
-      className={"zone-stack" + (onClick ? " clickable" : "") + (dragOver ? " drag-over" : "")}
-      onClick={onClick}
-      onDragOver={onDropCard ? (e) => { e.preventDefault(); setDragOver(true); } : undefined}
-      onDragLeave={onDropCard ? () => setDragOver(false) : undefined}
-      onDrop={
-        onDropCard
-          ? (e) => {
-              e.preventDefault();
-              setDragOver(false);
-              const payload = parseDrag(e);
-              if (payload) onDropCard(payload);
-            }
-          : undefined
-      }
-    >
-      <div className="zone-stack-face">
+    <div className={"zone-stack" + (onClick ? " clickable" : "")}>
+      <div
+        className={"zone-stack-face" + (dragOver ? " drag-over" : "")}
+        onClick={onClick}
+        onDragOver={onDropCard ? (e) => { e.preventDefault(); setDragOver(true); } : undefined}
+        onDragLeave={onDropCard ? () => setDragOver(false) : undefined}
+        onDrop={
+          onDropCard
+            ? (e) => {
+                e.preventDefault();
+                setDragOver(false);
+                const payload = parseDrag(e);
+                if (payload) onDropCard(payload);
+              }
+            : undefined
+        }
+      >
         <span className="zone-stack-count">{count}</span>
+        {menu && (
+          <button
+            className="menubtn"
+            draggable={false}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((v) => !v);
+            }}
+            aria-label={`More ${label} actions`}
+          >
+            ⋮
+          </button>
+        )}
       </div>
       <div className="zone-stack-label">{label}</div>
+      {menuOpen && menu && (
+        <div className="ctx-menu zone-stack-menu" draggable={false} onClick={(e) => e.stopPropagation()}>
+          {menu(() => setMenuOpen(false))}
+        </div>
+      )}
     </div>
   );
 }
 
 interface Props {
   playerId: string;
-  library: number;
-  graveyard: number;
-  exile: number;
+  library: CardInstance[];
+  graveyard: CardInstance[];
+  exile: CardInstance[];
   dispatch: (a: GameAction) => void;
 }
 
 export default function ZoneStacks({ playerId, library, graveyard, exile, dispatch }: Props) {
-  const [libMenuOpen, setLibMenuOpen] = useState(false);
+  const [browsing, setBrowsing] = useState<ZoneName | null>(null);
 
   function moveFromDrag(payload: DragPayload, to: "graveyard" | "exile") {
     // Dropping a card onto the zone it's already in would otherwise re-run the
@@ -69,20 +91,37 @@ export default function ZoneStacks({ playerId, library, graveyard, exile, dispat
     dispatch({ k: "moveCard", playerId, iid: payload.iid, from: payload.from, to });
   }
 
+  const zoneCards: Record<"library" | "graveyard" | "exile", CardInstance[]> = { library, graveyard, exile };
+  const browseTitle = browsing === "library" ? "Library" : browsing === "graveyard" ? "Graveyard" : "Exile";
+
   return (
     <div className="zone-stacks">
-      <div className="pill-menu-wrap">
-        <ZoneStack label="Library" count={library} onClick={() => setLibMenuOpen((v) => !v)} />
-        {libMenuOpen && (
-          <div className="ctx-menu lib-menu">
-            <button onClick={() => { dispatch({ k: "draw", playerId, count: 1 }); setLibMenuOpen(false); }}>Draw 1</button>
-            <button onClick={() => { dispatch({ k: "shuffleLibrary", playerId }); setLibMenuOpen(false); }}>Shuffle</button>
-            <button onClick={() => { dispatch({ k: "mill", playerId, count: 1 }); setLibMenuOpen(false); }}>Mill 1</button>
-          </div>
+      <ZoneStack
+        label="Library"
+        count={library.length}
+        onClick={() => dispatch({ k: "draw", playerId, count: 1 })}
+        menu={(close) => (
+          <>
+            <div className="hd">Library</div>
+            <button onClick={() => { setBrowsing("library"); close(); }}>Browse / search</button>
+            <button onClick={() => { dispatch({ k: "shuffleLibrary", playerId }); close(); }}>Shuffle</button>
+            <button onClick={() => { dispatch({ k: "mill", playerId, count: 1 }); close(); }}>Mill 1</button>
+          </>
         )}
-      </div>
-      <ZoneStack label="Graveyard" count={graveyard} onDropCard={(p) => moveFromDrag(p, "graveyard")} />
-      <ZoneStack label="Exile" count={exile} onDropCard={(p) => moveFromDrag(p, "exile")} />
+      />
+      <ZoneStack label="Graveyard" count={graveyard.length} onClick={() => setBrowsing("graveyard")} onDropCard={(p) => moveFromDrag(p, "graveyard")} />
+      <ZoneStack label="Exile" count={exile.length} onClick={() => setBrowsing("exile")} onDropCard={(p) => moveFromDrag(p, "exile")} />
+
+      {browsing && (
+        <ZoneBrowser
+          title={browseTitle}
+          zone={browsing}
+          cards={zoneCards[browsing as "library" | "graveyard" | "exile"]}
+          playerId={playerId}
+          dispatch={dispatch}
+          onClose={() => setBrowsing(null)}
+        />
+      )}
     </div>
   );
 }

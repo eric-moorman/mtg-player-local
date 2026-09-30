@@ -29,8 +29,18 @@ function OpponentBoard({ player }: { player: PlayerState }) {
       </div>
       <CommandZone command={player.zones.command} playerId={player.id} interactive={false} mini />
       <Quadrants battlefield={player.zones.battlefield} playerId={player.id} interactive={false} mini />
+      {player.handRevealed && player.zones.hand.length > 0 && (
+        <div>
+          <div className="qlabel">Hand (revealed)</div>
+          <div className="hand-row">
+            {player.zones.hand.map((card) => (
+              <ZoneCardTile key={card.iid} card={card} playerId={player.id} from="hand" interactive={false} mini />
+            ))}
+          </div>
+        </div>
+      )}
       <div className="tray-pills">
-        <span className="zone-chip"><b>{player.zones.hand.length}</b> hand</span>
+        <span className="zone-chip"><b>{player.zones.hand.length}</b> hand{player.handRevealed ? " (revealed)" : ""}</span>
         <span className="zone-chip"><b>{player.zones.library.length}</b> lib</span>
         <span className="zone-chip"><b>{player.zones.graveyard.length}</b> gy</span>
         <span className="zone-chip"><b>{player.zones.exile.length}</b> exile</span>
@@ -125,8 +135,6 @@ export default function GameTable() {
             <button className="btn" onClick={() => setTokenModalOpen(true)}>+ Token</button>
           </div>
 
-          <CommandZone command={me.zones.command} playerId={me.id} interactive dispatch={dispatch} />
-
           <div
             className={"board-field" + (dragOverBoard ? " drag-over" : "")}
             style={boardStyle}
@@ -145,26 +153,39 @@ export default function GameTable() {
           </div>
 
           <div className="tray">
-            <div className="hand-row">
-              {me.zones.hand.map((card) => (
-                <ZoneCardTile key={card.iid} card={card} playerId={me.id} from="hand" dispatch={dispatch} />
-              ))}
-              {me.zones.hand.length === 0 && <span className="hint">Your hand is empty.</span>}
+            <div className="hand-col">
+              <div className="hand-head">
+                <span className="qlabel">Hand</span>
+                <button
+                  className="btn reveal-toggle"
+                  onClick={() => dispatch({ k: "setHandRevealed", playerId: me.id, revealed: !me.handRevealed })}
+                >
+                  {me.handRevealed ? "Hide hand" : "Reveal hand"}
+                </button>
+              </div>
+              <div className="hand-row">
+                {me.zones.hand.map((card) => (
+                  <ZoneCardTile key={card.iid} card={card} playerId={me.id} from="hand" dispatch={dispatch} />
+                ))}
+                {me.zones.hand.length === 0 && <span className="hint">Your hand is empty.</span>}
+              </div>
             </div>
             <div className="divider" />
-            <div className="dice-row">
+            <div className="dice-col">
               <button className="btn" onClick={() => dispatch({ k: "coinFlip", playerId: me.id })}>🪙 Flip</button>
               <button className="btn" onClick={() => dispatch({ k: "diceRoll", playerId: me.id, sides: 6 })}>🎲 Roll d6</button>
             </div>
+            <div className="divider" />
+            <CommandZone command={me.zones.command} playerId={me.id} interactive dispatch={dispatch} />
           </div>
         </div>
 
         <div className="side-col">
           <ZoneStacks
             playerId={me.id}
-            library={me.zones.library.length}
-            graveyard={me.zones.graveyard.length}
-            exile={me.zones.exile.length}
+            library={me.zones.library}
+            graveyard={me.zones.graveyard}
+            exile={me.zones.exile}
             dispatch={dispatch}
           />
           <LogPanel log={gameState.log} onSend={sendChat} />

@@ -36,14 +36,22 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
   }
 
   return (
-    <div
-      className={"handtile" + (mini ? " mini" : "")}
-      onClick={() => openInspector(card)}
-      onContextMenu={draggable ? openMenu : undefined}
-      draggable={draggable}
-      onDragStart={draggable ? (e) => e.dataTransfer.setData("application/x-kitchentable-card", JSON.stringify({ iid: card.iid, from, playerId })) : undefined}
-    >
-      {card.image_small ? <img src={card.image_small} alt={card.name} /> : <div className="permtile-placeholder">{card.name.slice(0, 1)}</div>}
+    <div className={"handtile" + (mini ? " mini" : "")} onContextMenu={draggable ? openMenu : undefined}>
+      {/*
+        The drag source is this inner wrapper only, not the whole tile — a
+        draggable ancestor swallows clicks on its descendant buttons in
+        Chromium even when those buttons are individually draggable=false
+        (real, isolation-tested browser behavior, not just a React quirk),
+        so the Play/menu buttons below must live outside this subtree.
+      */}
+      <div
+        className="tile-art"
+        onClick={() => openInspector(card)}
+        draggable={draggable}
+        onDragStart={draggable ? (e) => e.dataTransfer.setData("application/x-kitchentable-card", JSON.stringify({ iid: card.iid, from, playerId })) : undefined}
+      >
+        {card.image_small ? <img src={card.image_small} alt={card.name} /> : <div className="permtile-placeholder">{card.name.slice(0, 1)}</div>}
+      </div>
       {interactive && dispatch && canPlay && (
         <button
           className="play-btn"
