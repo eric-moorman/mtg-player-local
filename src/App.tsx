@@ -3,6 +3,7 @@ import { useGame } from "./store/useGame";
 import * as db from "./lib/db";
 import Lobby from "./components/Lobby";
 import DeckBuilder from "./components/DeckBuilder";
+import Sealed from "./components/Sealed/Sealed";
 import GameTable from "./components/GameTable/GameTable";
 import Settings from "./components/Settings";
 import Inspector from "./components/Inspector";
@@ -39,6 +40,7 @@ export default function App() {
           <div className="frame">
             {screen === "lobby" && <Lobby />}
             {screen === "deckbuilder" && <DeckBuilder />}
+            {screen === "sealed" && <Sealed />}
             {screen === "table" && <GameTable />}
             {screen === "settings" && <Settings />}
           </div>

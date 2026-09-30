@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useGame, type Screen } from "../store/useGame";
-import { IconChevron, IconDeck, IconFlag, IconLobby, IconSettings, IconTable } from "./icons";
+import { IconChevron, IconDeck, IconFlag, IconLobby, IconPack, IconSettings, IconTable } from "./icons";
 import ReportModal from "./ReportModal";
 
 const NAV: { id: Screen; label: string; icon: (props: { size?: number }) => JSX.Element }[] = [
   { id: "lobby", label: "Lobby", icon: IconLobby },
   { id: "deckbuilder", label: "Deck Builder", icon: IconDeck },
+  { id: "sealed", label: "Sealed Pool", icon: IconPack },
   { id: "table", label: "Game Table", icon: IconTable },
   { id: "settings", label: "Settings", icon: IconSettings },
 ];

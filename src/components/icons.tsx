@@ -40,6 +40,16 @@ export function IconSettings({ size = 18 }: IconProps) {
   );
 }
 
+export function IconPack({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" {...base}>
+      <rect x="4" y="3" width="12" height="15" rx="1.5" />
+      <path d="M4 7.5h12" />
+      <circle cx="10" cy="7.5" r="1.4" />
+    </svg>
+  );
+}
+
 export function IconFlag({ size = 18 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" {...base}>
