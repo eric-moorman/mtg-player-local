@@ -11,7 +11,7 @@ gh issue list --repo eric-moorman/mtg-player-local --label agent-ready --state o
 ## Doing the work
 
 1. Read `DESIGN.md` and `README.md` first for the architecture and conventions already in place — reuse existing patterns (component structure, the `useGame` store, the design tokens in `src/styles/global.css`) rather than introducing new ones.
-2. Branch from `main` as `agent/issue-<number>-<short-slug>`.
+2. Branch from `dev` (the integration branch — `main` is production and only updates via a deliberate merge) as `agent/issue-<number>-<short-slug>`.
 3. Implement the change. If the issue is a bug report, reproduce it first if at all possible before "fixing" it blind.
 4. Verify before opening a PR, same bar used throughout this project:
    - `npm run typecheck` and `npm run build` for the app.
@@ -22,6 +22,6 @@ gh issue list --repo eric-moorman/mtg-player-local --label agent-ready --state o
 
 ## Opening the PR
 
-- `gh pr create` with a body that includes `Closes #<number>` and a plain summary of what changed and how it was verified.
+- `gh pr create --base dev` with a body that includes `Closes #<number>` and a plain summary of what changed and how it was verified. Targets `dev`, not `main` — production only moves on a deliberate merge from `dev`.
 - **Never merge your own PR.** This step exists for a human to review; stop once it's opened.
 - If you also want to tidy the issue, comment briefly and swap the `agent-ready` label for something like `in-review` so it isn't picked up again — but don't close it yourself.
