@@ -97,7 +97,7 @@ export default function PoolBuilder() {
             {totalInDeck === 0 && <li className="hint">Click a pool card's + to add it to the deck.</li>}
           </ul>
           <div className="actions">
-            <button className="btn" onClick={() => setActiveTab("acquire")}>← Open Packs / Buy</button>
+            <button className="btn" onClick={() => setActiveTab("packs")}>← Open Packs / Buy</button>
             <button className="btn primary" onClick={handleSave} disabled={totalInDeck === 0}>Save as deck</button>
           </div>
         </div>

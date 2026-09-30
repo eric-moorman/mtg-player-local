@@ -30,7 +30,8 @@
 .sealed-pack-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; text-align: left; min-width: 140px; }
 .sealed-pack-price { font-size: 0.72rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 
-.sealed-buy-grid { grid-template-columns: repeat(4, 1fr); max-height: 420px; overflow-y: auto; }
+.sealed-buy-tab-grid { grid-template-columns: 190px 1fr 250px; }
+.sealed-buy-tab-grid .card-grid { max-height: 65vh; overflow-y: auto; }
 .sealed-buy-btn {
   position: absolute; bottom: 6px; left: 6px; background: var(--accent); color: var(--accent-ink); border: none; border-radius: 999px;
   font-size: 0.66rem; font-weight: 700; padding: 0.15rem 0.55rem; cursor: pointer;

@@ -24,7 +24,7 @@ function saveConfig(config: SealedConfig) {
 }
 
 export type SealedPhase = "setup" | "loading" | "active";
-export type SealedTab = "acquire" | "build";
+export type SealedTab = "packs" | "buy" | "build";
 
 export interface PoolCard {
   uid: string;
@@ -79,7 +79,7 @@ function poolQtyByName(pool: PoolCard[], name: string): number {
 
 export const useSealed = create<SealedStore>((set, get) => ({
   phase: "setup",
-  activeTab: "acquire",
+  activeTab: "packs",
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   config: loadConfig(),
@@ -152,7 +152,7 @@ export const useSealed = create<SealedStore>((set, get) => ({
       for (const code of allowedSets) {
         setPools[code] = await scryfall.fetchSetCardPool(code);
       }
-      set({ setPools, phase: "active", activeTab: "acquire", spent: 0, pool: [], deckSelections: {} });
+      set({ setPools, phase: "active", activeTab: "packs", spent: 0, pool: [], deckSelections: {} });
     } catch {
       const name = get().availableSets.find((s) => !setPools[s.code] && allowedSets.includes(s.code))?.name;
       set({
@@ -214,7 +214,7 @@ export const useSealed = create<SealedStore>((set, get) => ({
   reset: () =>
     set({
       phase: "setup",
-      activeTab: "acquire",
+      activeTab: "packs",
       budget: 50,
       spent: 0,
       allowedSets: [],
