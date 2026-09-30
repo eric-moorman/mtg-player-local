@@ -7,7 +7,7 @@ import type { CardData, Deck, DeckCard, RarityWeights, SealedConfig, SetInfo } f
 const CONFIG_KEY = "kt-sealed-config";
 
 const DEFAULT_WEIGHTS: RarityWeights = { common: 60, uncommon: 25, rare: 12, mythic: 3 };
-const DEFAULT_CONFIG: SealedConfig = { cardsPerPack: 14, packPrice: 4, rarityWeights: DEFAULT_WEIGHTS };
+const DEFAULT_CONFIG: SealedConfig = { cardsPerPack: 14, packPrice: 6, rarityWeights: DEFAULT_WEIGHTS };
 
 function loadConfig(): SealedConfig {
   try {
@@ -189,7 +189,8 @@ export const useSealed = create<SealedStore>((set, get) => ({
     set((s) => {
       const entry = s.pool.find((p) => p.uid === uid);
       if (!entry) return {};
-      const refund = entry.via === "buy" ? scryfall.effectivePrice(entry.card) : 0;
+      // Pack-sourced cards can be sold back too, same as bought ones — both refund at the card's individual price.
+      const refund = scryfall.effectivePrice(entry.card);
       const nextPool = s.pool.filter((p) => p.uid !== uid);
       // Clamp the deck selection for this name in case the removed copy was one that had been chosen for the deck.
       const available = poolQtyByName(nextPool, entry.card.name);
