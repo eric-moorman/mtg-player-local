@@ -19,16 +19,32 @@ const ALL_TARGETS: { zone: ZoneName; label: string }[] = [
   { zone: "command", label: "Command" },
 ];
 
+const PLAYABLE_FROM: ZoneName[] = ["hand", "command"];
+
 export default function ZoneCardTile({ card, playerId, from, interactive = true, mini, dispatch }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const openInspector = useInspector((s) => s.open);
-  // Hand cards get a dedicated "Play" button instead of repeating Battlefield here.
-  const moveTargets = ALL_TARGETS.filter((t) => t.zone !== from && !(from === "hand" && t.zone === "battlefield"));
+  const canPlay = PLAYABLE_FROM.includes(from);
+  // Hand/command cards get a dedicated "Play" button instead of repeating Battlefield here.
+  const moveTargets = ALL_TARGETS.filter((t) => t.zone !== from && !(canPlay && t.zone === "battlefield"));
+  const draggable = interactive && !!dispatch;
+
+  function openMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen(true);
+  }
 
   return (
-    <div className={"handtile" + (mini ? " mini" : "")} onClick={() => openInspector(card)}>
+    <div
+      className={"handtile" + (mini ? " mini" : "")}
+      onClick={() => openInspector(card)}
+      onContextMenu={draggable ? openMenu : undefined}
+      draggable={draggable}
+      onDragStart={draggable ? (e) => e.dataTransfer.setData("application/x-kitchentable-card", JSON.stringify({ iid: card.iid, from, playerId })) : undefined}
+    >
       {card.image_small ? <img src={card.image_small} alt={card.name} /> : <div className="permtile-placeholder">{card.name.slice(0, 1)}</div>}
-      {interactive && dispatch && from === "hand" && (
+      {interactive && dispatch && canPlay && (
         <button
           className="play-btn"
           onClick={(e) => {
@@ -47,7 +63,8 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
             e.stopPropagation();
             setMenuOpen((v) => !v);
           }}
-          aria-label={`Actions for ${card.name}`}
+          aria-label={`Actions for ${card.name} (or right-click the card)`}
+          title="Actions (or right-click the card)"
         >
           ⋮
         </button>

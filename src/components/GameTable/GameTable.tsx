@@ -3,11 +3,22 @@ import { useGame } from "../../store/useGame";
 import Quadrants from "./Quadrants";
 import ZoneCardTile from "./ZoneCardTile";
 import CommandZone from "./CommandZone";
+import ZoneStacks from "./ZoneStacks";
 import TurnTracker from "./TurnTracker";
 import LogPanel from "./LogPanel";
 import TokenModal from "./TokenModal";
-import type { PlayerState } from "../../lib/types";
+import type { PlayerState, ZoneName } from "../../lib/types";
 import "./GameTable.css";
+
+function parseCardDrag(e: React.DragEvent): { iid: string; from: ZoneName; playerId: string } | null {
+  const raw = e.dataTransfer.getData("application/x-kitchentable-card");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
 function OpponentBoard({ player }: { player: PlayerState }) {
   return (
@@ -37,8 +48,8 @@ export default function GameTable() {
   const setScreen = useGame((s) => s.setScreen);
   const playmats = useGame((s) => s.playmats);
   const selectedPlaymat = useGame((s) => s.selectedPlaymat);
-  const [libMenuOpen, setLibMenuOpen] = useState(false);
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
+  const [dragOverBoard, setDragOverBoard] = useState(false);
 
   if (role === "offline" || !gameState) {
     return (
@@ -106,16 +117,30 @@ export default function GameTable() {
           <div className="seat-head">
             <span className="name">{me.name} (you)</span>
             <div className="life-tracker">
-              <button onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life - 1 })}>–</button>
+              <span className="life-label">Life</span>
+              <button className="life-btn minus" onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life - 1 })} aria-label="Lose 1 life">–</button>
               <span className="val">{me.life}</span>
-              <button onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life + 1 })}>+</button>
+              <button className="life-btn plus" onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life + 1 })} aria-label="Gain 1 life">+</button>
             </div>
             <button className="btn" onClick={() => setTokenModalOpen(true)}>+ Token</button>
           </div>
 
           <CommandZone command={me.zones.command} playerId={me.id} interactive dispatch={dispatch} />
 
-          <div className="board-field" style={boardStyle}>
+          <div
+            className={"board-field" + (dragOverBoard ? " drag-over" : "")}
+            style={boardStyle}
+            onDragOver={(e) => { e.preventDefault(); setDragOverBoard(true); }}
+            onDragLeave={() => setDragOverBoard(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOverBoard(false);
+              const payload = parseCardDrag(e);
+              if (payload && payload.from !== "battlefield") {
+                dispatch({ k: "moveCard", playerId: me.id, iid: payload.iid, from: payload.from, to: "battlefield" });
+              }
+            }}
+          >
             <Quadrants battlefield={me.zones.battlefield} playerId={me.id} interactive dispatch={dispatch} />
           </div>
 
@@ -127,23 +152,6 @@ export default function GameTable() {
               {me.zones.hand.length === 0 && <span className="hint">Your hand is empty.</span>}
             </div>
             <div className="divider" />
-            <div className="tray-pills">
-              <div className="pill-menu-wrap">
-                <button className="zone-chip clickable" onClick={() => setLibMenuOpen((v) => !v)}>
-                  <b>{me.zones.library.length}</b> library
-                </button>
-                {libMenuOpen && (
-                  <div className="ctx-menu lib-menu">
-                    <button onClick={() => { dispatch({ k: "draw", playerId: me.id, count: 1 }); setLibMenuOpen(false); }}>Draw 1</button>
-                    <button onClick={() => { dispatch({ k: "shuffleLibrary", playerId: me.id }); setLibMenuOpen(false); }}>Shuffle</button>
-                    <button onClick={() => { dispatch({ k: "mill", playerId: me.id, count: 1 }); setLibMenuOpen(false); }}>Mill 1</button>
-                  </div>
-                )}
-              </div>
-              <span className="zone-chip"><b>{me.zones.graveyard.length}</b> graveyard</span>
-              <span className="zone-chip"><b>{me.zones.exile.length}</b> exile</span>
-            </div>
-            <div className="divider" />
             <div className="dice-row">
               <button className="btn" onClick={() => dispatch({ k: "coinFlip", playerId: me.id })}>🪙 Flip</button>
               <button className="btn" onClick={() => dispatch({ k: "diceRoll", playerId: me.id, sides: 6 })}>🎲 Roll d6</button>
@@ -151,7 +159,16 @@ export default function GameTable() {
           </div>
         </div>
 
-        <LogPanel log={gameState.log} onSend={sendChat} />
+        <div className="side-col">
+          <ZoneStacks
+            playerId={me.id}
+            library={me.zones.library.length}
+            graveyard={me.zones.graveyard.length}
+            exile={me.zones.exile.length}
+            dispatch={dispatch}
+          />
+          <LogPanel log={gameState.log} onSend={sendChat} />
+        </div>
       </div>
 
       {tokenModalOpen && <TokenModal playerId={me.id} dispatch={dispatch} onClose={() => setTokenModalOpen(false)} />}

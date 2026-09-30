@@ -32,10 +32,21 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
     setMenuOpen(false);
   }
 
+  const draggable = interactive && !!dispatch;
+
+  function openMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen(true);
+  }
+
   return (
     <div
       className={"permtile" + (mini ? " mini" : "") + (representative.tapped ? " tapped" : "")}
       onClick={() => openInspector(representative)}
+      onContextMenu={draggable ? openMenu : undefined}
+      draggable={draggable}
+      onDragStart={draggable ? (e) => e.dataTransfer.setData("application/x-kitchentable-card", JSON.stringify({ iid: targetIid, from: "battlefield", playerId })) : undefined}
     >
       {representative.image_small ? (
         <img src={representative.image_small} alt={representative.name} />
@@ -52,7 +63,8 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
             e.stopPropagation();
             setMenuOpen((v) => !v);
           }}
-          aria-label={`Actions for ${representative.name}`}
+          aria-label={`Actions for ${representative.name} (or right-click the card)`}
+          title="Actions (or right-click the card)"
         >
           ⋮
         </button>

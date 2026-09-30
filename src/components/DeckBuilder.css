@@ -51,11 +51,14 @@
 .li-name { flex: 1; min-width: 0; }
 .li-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.05rem; flex-shrink: 0; }
 .crown-btn {
-  background: none; border: none; color: var(--border); cursor: pointer; font-size: 0.9rem; line-height: 1;
-  padding: 0; width: 1.1rem; flex-shrink: 0;
+  background: var(--surface-3); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; font-size: 1rem;
+  line-height: 1; padding: 0; width: 1.5rem; height: 1.5rem; border-radius: 6px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
 }
-.crown-btn.active { color: var(--accent); }
-.crown-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+.crown-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-strong); }
+.crown-btn.active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.crown-btn:disabled { cursor: not-allowed; opacity: 0.4; }
+.commander-hint { margin: -0.2rem 0 0.2rem; }
 .li-cost { font-size: 0.82rem; }
 .li-price { font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .decklist .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
