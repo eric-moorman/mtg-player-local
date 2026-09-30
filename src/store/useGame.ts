@@ -2,6 +2,8 @@ import { create } from "zustand";
 import Peer, { type DataConnection } from "peerjs";
 import * as db from "../lib/db";
 import * as scryfall from "../lib/scryfall";
+import * as cloud from "../lib/cloudSync";
+import { useAuth } from "./useAuth";
 import { generateRoomCode, roomCodeToPeerId } from "../lib/roomCode";
 import {
   applyAction,
@@ -49,6 +51,7 @@ interface AppStore {
 
   identity: Identity;
   setIdentity: (i: Identity) => void;
+  loadIdentity: () => Promise<void>;
 
   decks: Deck[];
   refreshDecks: () => Promise<void>;
@@ -95,25 +98,62 @@ function colorForIndex(i: number): string {
   return palette[i % palette.length];
 }
 
+/**
+ * Signed out: decks/identity/playmat read and write local IndexedDB exactly
+ * as before. Signed in: they read and write the account's synced blob
+ * instead — the two never merge (see useAuth.ts / cloudSync.ts).
+ */
+function isSignedIn(): boolean {
+  return useAuth.getState().user != null;
+}
+
 export const useGame = create<AppStore>((set, get) => ({
   screen: "lobby",
   setScreen: (s) => set({ screen: s }),
 
   identity: { name: "Player", color: colorForIndex(0) },
   setIdentity: (i) => {
-    db.setIdentity(i);
+    if (isSignedIn()) cloud.patchSync({ identity: i }).catch(() => {});
+    else db.setIdentity(i);
     set({ identity: i });
+  },
+  loadIdentity: async () => {
+    if (isSignedIn()) {
+      const data = await cloud.getSync();
+      set({ identity: data?.identity ?? get().identity });
+    } else {
+      set({ identity: await db.getIdentity() });
+    }
   },
 
   decks: [],
-  refreshDecks: async () => set({ decks: await db.listDecks() }),
+  refreshDecks: async () => {
+    if (isSignedIn()) {
+      const data = await cloud.getSync();
+      set({ decks: data?.decks ?? [] });
+    } else {
+      set({ decks: await db.listDecks() });
+    }
+  },
   saveDeck: async (deck) => {
-    await db.saveDeck(deck);
-    set({ decks: await db.listDecks() });
+    if (isSignedIn()) {
+      const decks = [...get().decks.filter((d) => d.id !== deck.id), deck];
+      await cloud.patchSync({ decks });
+      set({ decks });
+    } else {
+      await db.saveDeck(deck);
+      set({ decks: await db.listDecks() });
+    }
   },
   removeDeck: async (id) => {
-    await db.deleteDeck(id);
-    set({ decks: await db.listDecks() });
+    if (isSignedIn()) {
+      const decks = get().decks.filter((d) => d.id !== id);
+      await cloud.patchSync({ decks });
+      set({ decks });
+    } else {
+      await db.deleteDeck(id);
+      set({ decks: await db.listDecks() });
+    }
   },
 
   catalog: [],
@@ -144,12 +184,21 @@ export const useGame = create<AppStore>((set, get) => ({
   playmats: BUILTIN_PLAYMATS,
   selectedPlaymat: "slate",
   loadPlaymats: async () => {
-    const [custom, selected] = await Promise.all([db.listCustomPlaymats(), db.getSelectedPlaymat()]);
-    set({ playmats: [...BUILTIN_PLAYMATS, ...custom], selectedPlaymat: selected });
+    // Custom playmat *assets* stay local-only regardless of sign-in state (not part of the synced blob) —
+    // only which playmat is selected syncs.
+    const custom = await db.listCustomPlaymats();
+    if (isSignedIn()) {
+      const data = await cloud.getSync();
+      set({ playmats: [...BUILTIN_PLAYMATS, ...custom], selectedPlaymat: data?.selectedPlaymat ?? "slate" });
+    } else {
+      const selected = await db.getSelectedPlaymat();
+      set({ playmats: [...BUILTIN_PLAYMATS, ...custom], selectedPlaymat: selected });
+    }
   },
   selectPlaymat: async (id) => {
     set({ selectedPlaymat: id });
-    await db.setSelectedPlaymat(id);
+    if (isSignedIn()) await cloud.patchSync({ selectedPlaymat: id }).catch(() => {});
+    else await db.setSelectedPlaymat(id);
   },
   addCustomPlaymat: async (name, imageDataUrl) => {
     const playmat: PlayMat = { id: newId(), name, kind: "custom", image: imageDataUrl };

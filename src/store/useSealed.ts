@@ -1,10 +1,16 @@
 import { create } from "zustand";
 import * as scryfall from "../lib/scryfall";
-import { saveDeck } from "../lib/db";
+import * as cloud from "../lib/cloudSync";
+import { useAuth } from "./useAuth";
+import { useGame } from "./useGame";
 import { newId } from "../lib/reducer";
 import type { CardData, Deck, DeckCard, RarityWeights, SealedConfig, SetInfo } from "../lib/types";
 
 const CONFIG_KEY = "kt-sealed-config";
+
+function isSignedIn(): boolean {
+  return useAuth.getState().user != null;
+}
 
 const DEFAULT_WEIGHTS: RarityWeights = { common: 60, uncommon: 25, rare: 12, mythic: 3 };
 const DEFAULT_CONFIG: SealedConfig = { cardsPerPack: 14, packPrice: 6, rarityWeights: DEFAULT_WEIGHTS };
@@ -41,6 +47,8 @@ interface SealedStore {
   config: SealedConfig;
   setConfig: (patch: Partial<SealedConfig>) => void;
   setRarityWeight: (rarity: keyof RarityWeights, value: number) => void;
+  /** Re-reads config from the account (if signed in) or localStorage (if not) — called on sign-in/sign-out. */
+  loadRemoteConfig: () => Promise<void>;
 
   budget: number;
   setBudget: (n: number) => void;
@@ -86,15 +94,25 @@ export const useSealed = create<SealedStore>((set, get) => ({
   setConfig: (patch) =>
     set((s) => {
       const config = { ...s.config, ...patch };
-      saveConfig(config);
+      if (isSignedIn()) cloud.patchSync({ sealedConfig: config }).catch(() => {});
+      else saveConfig(config);
       return { config };
     }),
   setRarityWeight: (rarity, value) =>
     set((s) => {
       const config = { ...s.config, rarityWeights: { ...s.config.rarityWeights, [rarity]: value } };
-      saveConfig(config);
+      if (isSignedIn()) cloud.patchSync({ sealedConfig: config }).catch(() => {});
+      else saveConfig(config);
       return { config };
     }),
+  loadRemoteConfig: async () => {
+    if (isSignedIn()) {
+      const data = await cloud.getSync();
+      if (data?.sealedConfig) set({ config: data.sealedConfig });
+    } else {
+      set({ config: loadConfig() });
+    }
+  },
 
   budget: 50,
   setBudget: (n) => set({ budget: Math.max(0, n) }),
@@ -208,7 +226,7 @@ export const useSealed = create<SealedStore>((set, get) => ({
       .filter(([, qty]) => qty > 0)
       .map(([cardName, qty]) => ({ name: cardName, qty }));
     const deck: Deck = { id: newId(), name: name.trim() || "Sealed pool", cards, updatedAt: Date.now() };
-    await saveDeck(deck);
+    await useGame.getState().saveDeck(deck);
     return deck.id;
   },
 
