@@ -22,11 +22,24 @@ const ALL_TARGETS: { zone: ZoneName; label: string }[] = [
 export default function ZoneCardTile({ card, playerId, from, interactive = true, mini, dispatch }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const openInspector = useInspector((s) => s.open);
-  const moveTargets = ALL_TARGETS.filter((t) => t.zone !== from);
+  // Hand cards get a dedicated "Play" button instead of repeating Battlefield here.
+  const moveTargets = ALL_TARGETS.filter((t) => t.zone !== from && !(from === "hand" && t.zone === "battlefield"));
 
   return (
     <div className={"handtile" + (mini ? " mini" : "")} onClick={() => openInspector(card)}>
       {card.image_small ? <img src={card.image_small} alt={card.name} /> : <div className="permtile-placeholder">{card.name.slice(0, 1)}</div>}
+      {interactive && dispatch && from === "hand" && (
+        <button
+          className="play-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            dispatch({ k: "moveCard", playerId, iid: card.iid, from, to: "battlefield" });
+          }}
+          aria-label={`Play ${card.name} to the battlefield`}
+        >
+          Play
+        </button>
+      )}
       {interactive && dispatch && (
         <button
           className="menubtn"
