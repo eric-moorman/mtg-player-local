@@ -15,6 +15,13 @@
 .inspect-keywords { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .kw-chip { background: var(--accent-soft); color: var(--accent-strong); font-size: 0.66rem; font-weight: 700; border-radius: 999px; padding: 0.18rem 0.6rem; text-transform: uppercase; letter-spacing: 0.03em; cursor: help; }
 .inspect-pt { font-weight: 800; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.inspect-printings-loading { font-size: 0.78rem; color: var(--text-dim); margin: 0; }
+.inspect-printings { display: flex; flex-direction: column; gap: 0.3rem; padding-top: 0.4rem; border-top: 1px solid var(--border); }
+.inspect-printings-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+.inspect-printings ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.inspect-printings li { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.8rem; }
+.inspect-printing-set { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inspect-printing-meta { color: var(--text-dim); font-size: 0.72rem; flex-shrink: 0; text-transform: capitalize; }
 .inspect-close {
   position: absolute; top: 0.6rem; right: 0.6rem; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
   background: var(--surface-2); cursor: pointer; font-size: 1rem; line-height: 1; color: var(--text);
