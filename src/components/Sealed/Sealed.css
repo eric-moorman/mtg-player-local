@@ -52,7 +52,15 @@
 .pack-reveal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.6rem; overflow-y: auto; }
 @media (max-width: 640px) { .pack-reveal-grid { grid-template-columns: repeat(4, 1fr); } }
 .pack-reveal-tile { position: relative; border-radius: 7px; overflow: hidden; cursor: pointer; aspect-ratio: 5/7; }
-.pack-reveal-tile .cardback { width: 100%; height: 100%; border-radius: 7px; }
+.pack-reveal-tile .cardback {
+  width: 100%; height: 100%; border-radius: 7px; position: relative;
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent) 55%, var(--accent-soft));
+  border: 1px solid var(--border);
+}
+.pack-reveal-tile .cardback::after {
+  content: ""; position: absolute; inset: 16%; border: 2px solid rgba(255, 255, 255, 0.35); border-radius: 50%;
+}
+.pack-reveal-tile:hover .cardback { filter: brightness(1.08); }
 .pack-reveal-tile img { width: 100%; height: 100%; object-fit: cover; }
 .pack-rarity-badge {
   position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
