@@ -10,6 +10,7 @@ export interface CardData {
   power?: string;
   toughness?: string;
   loyalty?: string;
+  rarity?: string;
   price_usd: number | null;
   image_small?: string;
   image_large?: string;
@@ -90,6 +91,31 @@ export interface Identity {
 }
 
 export type PlayMat = { id: string; name: string; kind: "builtin" | "custom"; css?: string; image?: string };
+
+// ---- Sealed Pool minigame ----
+
+export interface SetInfo {
+  code: string;
+  name: string;
+  set_type: string;
+  released_at: string;
+  card_count: number;
+}
+
+export type Rarity = "common" | "uncommon" | "rare" | "mythic";
+
+export interface RarityWeights {
+  common: number;
+  uncommon: number;
+  rare: number;
+  mythic: number;
+}
+
+export interface SealedConfig {
+  cardsPerPack: number;
+  packPrice: number;
+  rarityWeights: RarityWeights;
+}
 
 // ---- Network protocol ----
 

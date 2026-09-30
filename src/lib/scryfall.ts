@@ -1,5 +1,5 @@
-import { getCatalogMeta, loadCatalogChunks, saveCatalogChunks, setCatalogMeta } from "./db";
-import type { CardData, DeckCard } from "./types";
+import { getCatalogMeta, loadCatalogChunks, loadSetPool, saveCatalogChunks, saveSetPool, setCatalogMeta } from "./db";
+import type { CardData, DeckCard, RarityWeights, SetInfo } from "./types";
 
 const USER_AGENT_NOTE = "KitchenTable/0.1 (friends-only P2P MTG table; non-commercial)";
 const CHUNK_SIZE = 4000;
@@ -38,6 +38,7 @@ function slim(raw: any): CardData | null {
     power: raw.power,
     toughness: raw.toughness,
     loyalty: raw.loyalty,
+    rarity: raw.rarity,
     price_usd: raw.prices?.usd ? parseFloat(raw.prices.usd) : raw.prices?.usd_foil ? parseFloat(raw.prices.usd_foil) : null,
     image_small: imgs.small,
     image_large: imgs.large,
@@ -207,6 +208,87 @@ export function resolveDeckToCards(deck: DeckCard[], catalog: CardData[]): CardD
     const found = byName.get(dc.name.toLowerCase());
     if (!found) continue;
     for (let i = 0; i < dc.qty; i++) out.push(found);
+  }
+  return out;
+}
+
+// ---- Sealed Pool minigame ----
+
+/** Set types that are booster-pack products, as opposed to preconstructed ones (out of scope for now). */
+const BOOSTER_SET_TYPES = new Set(["expansion", "core", "masters", "draft_innovation", "alchemy", "arsenal", "funny"]);
+
+let setListCache: SetInfo[] | null = null;
+
+/** All Scryfall sets, filtered to booster-style products, newest first. Cached in memory for the session. */
+export async function fetchSetList(): Promise<SetInfo[]> {
+  if (setListCache) return setListCache;
+  const res = await politeFetch("https://api.scryfall.com/sets");
+  if (!res.ok) return [];
+  const data = await res.json();
+  const sets: SetInfo[] = (data.data ?? [])
+    .filter((s: any) => !s.digital && BOOSTER_SET_TYPES.has(s.set_type) && s.card_count > 0)
+    .map((s: any) => ({ code: s.code, name: s.name, set_type: s.set_type, released_at: s.released_at ?? "", card_count: s.card_count }))
+    .sort((a: SetInfo, b: SetInfo) => (a.released_at < b.released_at ? 1 : -1));
+  setListCache = sets;
+  return sets;
+}
+
+const RARITIES = ["common", "uncommon", "rare", "mythic"] as const;
+
+/**
+ * Every card in a set (nonfoil pool, standard rarities only), paginated
+ * through Scryfall's search and cached in IndexedDB — this is deliberately a
+ * different data source than the big oracle_cards catalog, which is one
+ * representative printing per card and not organized by set at all.
+ */
+export async function fetchSetCardPool(setCode: string): Promise<CardData[]> {
+  const cached = await loadSetPool(setCode);
+  if (cached) return cached;
+
+  const cards: CardData[] = [];
+  let url: string | null = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(`e:${setCode}`)}&unique=cards&order=set`;
+  while (url) {
+    const res: Response = await politeFetch(url);
+    if (!res.ok) break;
+    const data: any = await res.json();
+    for (const raw of data.data ?? []) {
+      if (!RARITIES.includes(raw.rarity)) continue;
+      const s = slim(raw);
+      if (s) cards.push(s);
+    }
+    url = data.has_more ? data.next_page : null;
+  }
+
+  await saveSetPool(setCode, cards);
+  return cards;
+}
+
+function weightedRarity(weights: RarityWeights): (typeof RARITIES)[number] {
+  const total = weights.common + weights.uncommon + weights.rare + weights.mythic;
+  let roll = Math.random() * total;
+  for (const r of RARITIES) {
+    roll -= weights[r];
+    if (roll <= 0) return r;
+  }
+  return "common";
+}
+
+/**
+ * Simulates opening a pack: an independent rarity-weighted draw per card
+ * slot, not a guaranteed-slot replica of any specific real product (Scryfall
+ * doesn't expose booster slot configuration, and it's varied by product and
+ * changed over the years anyway).
+ */
+export function openPack(pool: CardData[], cardsPerPack: number, weights: RarityWeights): CardData[] {
+  const byRarity: Record<string, CardData[]> = { common: [], uncommon: [], rare: [], mythic: [] };
+  for (const card of pool) {
+    if (card.rarity && byRarity[card.rarity]) byRarity[card.rarity].push(card);
+  }
+  const out: CardData[] = [];
+  for (let i = 0; i < cardsPerPack; i++) {
+    const rarity = weightedRarity(weights);
+    const bucket = byRarity[rarity].length ? byRarity[rarity] : pool;
+    out.push(bucket[Math.floor(Math.random() * bucket.length)]);
   }
   return out;
 }

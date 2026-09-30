@@ -1,8 +1,10 @@
 import { openDB, type IDBPDatabase } from "idb";
 import type { CardData, Deck, Identity, PlayMat } from "./types";
 
+const SET_POOL_STALE_MS = 14 * 24 * 60 * 60 * 1000;
+
 const DB_NAME = "kitchen-table";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -24,6 +26,9 @@ function getDb() {
         }
         if (!db.objectStoreNames.contains("playmats")) {
           db.createObjectStore("playmats", { keyPath: "id" });
+        }
+        if (!db.objectStoreNames.contains("setPools")) {
+          db.createObjectStore("setPools");
         }
       },
     });
@@ -112,4 +117,25 @@ export async function saveCustomPlaymat(playmat: PlayMat) {
 export async function deleteCustomPlaymat(id: string) {
   const db = await getDb();
   await db.delete("playmats", id);
+}
+
+// ---- Sealed Pool: per-set card pool cache ----
+
+interface StoredSetPool {
+  cards: CardData[];
+  cachedAt: number;
+}
+
+export async function saveSetPool(setCode: string, cards: CardData[]) {
+  const db = await getDb();
+  const record: StoredSetPool = { cards, cachedAt: Date.now() };
+  await db.put("setPools", record, setCode);
+}
+
+export async function loadSetPool(setCode: string): Promise<CardData[] | null> {
+  const db = await getDb();
+  const record: StoredSetPool | undefined = await db.get("setPools", setCode);
+  if (!record) return null;
+  if (Date.now() - record.cachedAt > SET_POOL_STALE_MS) return null;
+  return record.cards;
 }
