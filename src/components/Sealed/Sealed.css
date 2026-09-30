@@ -5,7 +5,10 @@
 .sealed-config-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; font-size: 0.82rem; }
 .sealed-config-row input { width: 5rem; }
 
-.sealed-sets-col > label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
+.sealed-sets-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.5rem; }
+.sealed-sets-head label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+.sealed-sets-bulk { display: flex; gap: 0.4rem; }
+.sealed-sets-bulk .btn { padding: 0.3rem 0.6rem; font-size: 0.72rem; }
 .sealed-set-list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.15rem; border: 1px solid var(--border); border-radius: 10px; padding: 0.5rem; background: var(--surface-2); }
 .sealed-set-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; padding: 0.25rem 0.3rem; border-radius: 6px; }
 .sealed-set-row:hover { background: var(--surface-3); }
@@ -27,7 +30,8 @@
 .sealed-pack-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; text-align: left; min-width: 140px; }
 .sealed-pack-price { font-size: 0.72rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 
-.sealed-buy-grid { grid-template-columns: repeat(4, 1fr); max-height: 420px; overflow-y: auto; }
+.sealed-buy-tab-grid { grid-template-columns: 190px 1fr 250px; }
+.sealed-buy-tab-grid .card-grid { max-height: 65vh; overflow-y: auto; }
 .sealed-buy-btn {
   position: absolute; bottom: 6px; left: 6px; background: var(--accent); color: var(--accent-ink); border: none; border-radius: 999px;
   font-size: 0.66rem; font-weight: 700; padding: 0.15rem 0.55rem; cursor: pointer;
@@ -48,7 +52,15 @@
 .pack-reveal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.6rem; overflow-y: auto; }
 @media (max-width: 640px) { .pack-reveal-grid { grid-template-columns: repeat(4, 1fr); } }
 .pack-reveal-tile { position: relative; border-radius: 7px; overflow: hidden; cursor: pointer; aspect-ratio: 5/7; }
-.pack-reveal-tile .cardback { width: 100%; height: 100%; border-radius: 7px; }
+.pack-reveal-tile .cardback {
+  width: 100%; height: 100%; border-radius: 7px; position: relative;
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent) 55%, var(--accent-soft));
+  border: 1px solid var(--border);
+}
+.pack-reveal-tile .cardback::after {
+  content: ""; position: absolute; inset: 16%; border: 2px solid rgba(255, 255, 255, 0.35); border-radius: 50%;
+}
+.pack-reveal-tile:hover .cardback { filter: brightness(1.08); }
 .pack-reveal-tile img { width: 100%; height: 100%; object-fit: cover; }
 .pack-rarity-badge {
   position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -58,6 +70,11 @@
 .pack-rarity-badge.rarity-rare { background: #b8962e; }
 .pack-rarity-badge.rarity-mythic { background: #c1502e; }
 
-.sealed-pool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.7rem; margin-bottom: 1.2rem; max-height: 60vh; overflow-y: auto; }
-.sealed-save-bar { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
-.sealed-save-bar input { flex: 1; min-width: 180px; }
+.sealed-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.sealed-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.6rem 0.9rem; font-size: 0.88rem; color: var(--text-dim); cursor: pointer; margin-bottom: -1px; }
+.sealed-tab:hover { color: var(--text); }
+.sealed-tab.active { color: var(--accent-strong); border-bottom-color: var(--accent); font-weight: 600; }
+.sealed-tab:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sealed-build-grid { grid-template-columns: 1fr 280px; }
+.sealed-build-grid .card-grid { max-height: 65vh; overflow-y: auto; }

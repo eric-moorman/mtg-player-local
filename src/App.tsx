@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useGame } from "./store/useGame";
-import * as db from "./lib/db";
+import { useAuth } from "./store/useAuth";
+import { refreshAllFromAuthState } from "./lib/accountSync";
 import Lobby from "./components/Lobby";
 import DeckBuilder from "./components/DeckBuilder";
 import Sealed from "./components/Sealed/Sealed";
@@ -11,16 +12,15 @@ import Sidebar from "./components/Sidebar";
 
 export default function App() {
   const screen = useGame((s) => s.screen);
-  const setIdentity = useGame((s) => s.setIdentity);
-  const refreshDecks = useGame((s) => s.refreshDecks);
   const loadCatalogFromCache = useGame((s) => s.loadCatalogFromCache);
-  const loadPlaymats = useGame((s) => s.loadPlaymats);
+  const checkSession = useAuth((s) => s.checkSession);
 
   useEffect(() => {
-    db.getIdentity().then(setIdentity);
-    refreshDecks();
+    // Catalog is shared reference data (not per-account), so it loads regardless of sign-in state.
     loadCatalogFromCache();
-    loadPlaymats();
+    // Decks/identity/playmat/sealed-config all branch on auth state internally — resolve the
+    // session first so that first hydration reads the right place (cloud vs local IndexedDB).
+    checkSession().then(refreshAllFromAuthState);
   }, []);
 
   return (

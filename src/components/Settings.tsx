@@ -1,8 +1,101 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGame } from "../store/useGame";
+import { useAuth } from "../store/useAuth";
+import { refreshAllFromAuthState } from "../lib/accountSync";
 import "./Settings.css";
 
 const PLAYER_COLORS = ["#B2532F", "#3E7EAE", "#4C7350", "#8F6C1E", "#4B4258", "#A0527A"];
+
+function AccountSection() {
+  const user = useAuth((s) => s.user);
+  const status = useAuth((s) => s.status);
+  const error = useAuth((s) => s.error);
+  const login = useAuth((s) => s.login);
+  const register = useAuth((s) => s.register);
+  const logout = useAuth((s) => s.logout);
+
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const ok = mode === "login" ? await login(username, password) : await register(username, password);
+    if (ok) {
+      setUsername("");
+      setPassword("");
+      await refreshAllFromAuthState();
+    }
+    setBusy(false);
+  }
+
+  async function handleSignOut() {
+    setBusy(true);
+    await logout();
+    await refreshAllFromAuthState();
+    setBusy(false);
+  }
+
+  if (status === "checking") {
+    return (
+      <div className="account-card">
+        <label className="section-label">Account</label>
+        <p className="small-note">Checking sign-in status…</p>
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <div className="account-card">
+        <label className="section-label">Account</label>
+        <p className="small-note">
+          Synced as <strong>{user.username}</strong> — decks, identity, playmat, and sealed-pool settings follow you to any
+          device you sign in on.
+        </p>
+        <button className="btn" onClick={handleSignOut} disabled={busy}>
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="account-card">
+      <label className="section-label">Account</label>
+      <p className="small-note">
+        Optional — everything works fine without one. Sign in to sync decks and preferences across devices.
+      </p>
+      <form className="field-row account-form" onSubmit={submit}>
+        <div className="field">
+          <label>Username</label>
+          <input
+            className="account-username-input" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username" minLength={3} maxLength={32} required
+          />
+        </div>
+        <div className="field">
+          <label>Password</label>
+          <input
+            className="account-password-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required
+          />
+        </div>
+        <div className="field">
+          <button className="btn primary" type="submit" disabled={busy}>
+            {mode === "login" ? "Sign in" : "Create account"}
+          </button>
+        </div>
+      </form>
+      {error && <p className="account-error">{error}</p>}
+      <button className="account-toggle" type="button" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+        {mode === "login" ? "Need an account? Register" : "Already have an account? Sign in"}
+      </button>
+    </div>
+  );
+}
 
 export default function Settings() {
   const identity = useGame((s) => s.identity);
@@ -14,6 +107,12 @@ export default function Settings() {
 
   const [name, setName] = useState(identity.name);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // identity can now change from outside this component's own input (sign-in/out swaps
+  // between local and cloud identity) — keep the field's local state in sync with it.
+  useEffect(() => {
+    setName(identity.name);
+  }, [identity.name]);
 
   function commitName() {
     if (name.trim() && name !== identity.name) setIdentity({ ...identity, name: name.trim() });
@@ -40,6 +139,8 @@ export default function Settings() {
       </div>
 
       <div className="settings-grid">
+        <AccountSection />
+
         <div>
           <label className="section-label">Playmat</label>
           <div className="swatch-row">
@@ -67,7 +168,11 @@ export default function Settings() {
         <div className="field-row">
           <div className="field">
             <label>Display name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} onBlur={commitName} onKeyDown={(e) => e.key === "Enter" && commitName()} />
+            <input
+              className="display-name-input" type="text" value={name}
+              onChange={(e) => setName(e.target.value)} onBlur={commitName}
+              onKeyDown={(e) => e.key === "Enter" && commitName()}
+            />
           </div>
           <div className="field">
             <label>Player color</label>

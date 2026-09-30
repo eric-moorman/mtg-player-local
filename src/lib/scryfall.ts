@@ -14,12 +14,48 @@ export interface CatalogProgress {
 // Scryfall asks that API clients identify themselves and self-throttle.
 // The browser can't set a custom User-Agent header on fetch, so we keep a
 // small gap between requests instead and note the client in a query-string-free way.
+//
+// This is a real FIFO queue, not just a timestamp check — callers that fire
+// several requests concurrently (e.g. loading multiple sets in parallel)
+// would otherwise race on a shared "last request" timestamp and could still
+// send requests close together instead of properly spaced out. Each call
+// also gets a couple of retries with backoff for transient failures (a
+// dropped connection or a 5xx can otherwise surface in the browser looking
+// like a CORS error, since an errored response sometimes comes back without
+// the usual CORS headers).
+const REQUEST_GAP_MS = 100;
 let lastRequestAt = 0;
-async function politeFetch(url: string, init?: RequestInit): Promise<Response> {
-  const wait = 100 - (Date.now() - lastRequestAt);
-  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  lastRequestAt = Date.now();
-  return fetch(url, { ...init, headers: { Accept: "application/json", ...init?.headers } });
+let requestQueue: Promise<void> = Promise.resolve();
+
+function politeFetch(url: string, init?: RequestInit): Promise<Response> {
+  const task = requestQueue.then(async () => {
+    const wait = REQUEST_GAP_MS - (Date.now() - lastRequestAt);
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastRequestAt = Date.now();
+    return fetchWithRetry(url, init);
+  });
+  requestQueue = task.then(
+    () => undefined,
+    () => undefined
+  );
+  return task;
+}
+
+async function fetchWithRetry(url: string, init: RequestInit | undefined, attempt = 0): Promise<Response> {
+  try {
+    const res = await fetch(url, { ...init, headers: { Accept: "application/json", ...init?.headers } });
+    if (res.status >= 500 && attempt < 2) {
+      await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+      return fetchWithRetry(url, init, attempt + 1);
+    }
+    return res;
+  } catch (err) {
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+      return fetchWithRetry(url, init, attempt + 1);
+    }
+    throw err;
+  }
 }
 
 function slim(raw: any): CardData | null {
@@ -234,6 +270,22 @@ export async function fetchSetList(): Promise<SetInfo[]> {
 }
 
 const RARITIES = ["common", "uncommon", "rare", "mythic"] as const;
+
+// Scryfall has no price for a printing when no vendor has current market data for it
+// (brand-new spoilers, oddball promos, serialized variants, etc). Rather than let the
+// Sealed Pool minigame treat those as free, fall back to a flat rarity-based price.
+const DEFAULT_RARITY_PRICE: Record<(typeof RARITIES)[number], number> = {
+  common: 0.05,
+  uncommon: 0.2,
+  rare: 1,
+  mythic: 5,
+};
+
+export function effectivePrice(card: CardData): number {
+  if (card.price_usd != null) return card.price_usd;
+  const rarity = card.rarity as (typeof RARITIES)[number] | undefined;
+  return (rarity && DEFAULT_RARITY_PRICE[rarity]) ?? DEFAULT_RARITY_PRICE.common;
+}
 
 /**
  * Every card in a set (nonfoil pool, standard rarities only), paginated

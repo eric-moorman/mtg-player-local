@@ -1,20 +1,23 @@
 /**
- * This Worker only ever handles POST /api/report — every other request is a
- * static asset served automatically by Cloudflare before it even reaches
- * this script (see the "assets" config in wrangler.jsonc).
+ * Every dynamic route this Worker handles — bug/feature reports and account
+ * sign-in/sync — is dispatched from here; everything else is a static asset
+ * served automatically by Cloudflare before it even reaches this script (see
+ * the "assets" config in wrangler.jsonc).
  *
- * It deliberately does the least possible: it never talks to the GitHub
- * Issues API directly. It only commits a small file into reports/ using a
- * token scoped to Contents: read/write on this one repo — a separate GitHub
- * Action (using GitHub's own free per-run token) is what turns that file into
- * a real, labeled Issue. If this Worker's token ever leaked, the worst case
- * is "someone can commit junk files here," not "someone can touch the account."
+ * The report route deliberately does the least possible: it never talks to
+ * the GitHub Issues API directly. It only commits a small file into reports/
+ * using a token scoped to Contents: read/write on this one repo — a separate
+ * GitHub Action (using GitHub's own free per-run token) is what turns that
+ * file into a real, labeled Issue. If this Worker's token ever leaked, the
+ * worst case is "someone can commit junk files here," not "someone can touch
+ * the account."
  */
+import type { Env } from "./env";
+import { json } from "./http";
+import { handleRegister, handleLogin, handleLogout, handleMe } from "./auth";
+import { handleGetSync, handlePutSync } from "./sync";
 
-export interface Env {
-  GITHUB_REPORTS_TOKEN: string;
-  RATE_LIMIT_KV: KVNamespace;
-}
+export type { Env };
 
 interface ReportBody {
   type?: string;
@@ -36,9 +39,17 @@ const RATE_LIMIT_PER_HOUR = 5;
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === "/api/report" && request.method === "POST") {
-      return handleReport(request, env);
-    }
+    const { pathname } = url;
+    const method = request.method;
+
+    if (pathname === "/api/report" && method === "POST") return handleReport(request, env);
+    if (pathname === "/api/auth/register" && method === "POST") return handleRegister(request, env);
+    if (pathname === "/api/auth/login" && method === "POST") return handleLogin(request, env);
+    if (pathname === "/api/auth/logout" && method === "POST") return handleLogout(request, env);
+    if (pathname === "/api/auth/me" && method === "GET") return handleMe(request, env);
+    if (pathname === "/api/sync" && method === "GET") return handleGetSync(request, env);
+    if (pathname === "/api/sync" && method === "PUT") return handlePutSync(request, env);
+
     return new Response("Not found", { status: 404 });
   },
 };
@@ -133,8 +144,4 @@ function toBase64(str: string): string {
   let binary = "";
   for (const b of bytes) binary += String.fromCharCode(b);
   return btoa(binary);
-}
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 }
