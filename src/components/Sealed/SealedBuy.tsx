@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { useSealed } from "../../store/useSealed";
 import { useInspector } from "../../store/useInspector";
+import { effectivePrice } from "../../lib/scryfall";
 import SealedPoolList from "./SealedPoolList";
 import type { CardData } from "../../lib/types";
 
 const COLOR_KEYS = ["W", "U", "B", "R", "G", "C"] as const;
 
-function formatPrice(n: number | null | undefined) {
-  return n == null ? "—" : `$${n.toFixed(2)}`;
+function formatPrice(n: number) {
+  return `$${n.toFixed(2)}`;
 }
 
 export default function SealedBuy() {
@@ -53,8 +54,9 @@ export default function SealedBuy() {
         if (typeFilter && !c.type_line.toLowerCase().includes(typeFilter.toLowerCase())) return false;
         if (cmcLo != null && c.cmc < cmcLo) return false;
         if (cmcHi != null && c.cmc > cmcHi) return false;
-        if (priceLo != null && (c.price_usd == null || c.price_usd < priceLo)) return false;
-        if (priceHi != null && (c.price_usd == null || c.price_usd > priceHi)) return false;
+        const price = effectivePrice(c);
+        if (priceLo != null && price < priceLo) return false;
+        if (priceHi != null && price > priceHi) return false;
         if (kw && !c.keywords.some((k) => k.toLowerCase().includes(kw))) return false;
         return true;
       })
@@ -111,22 +113,28 @@ export default function SealedBuy() {
 
       <div className="db-col">
         <div className="card-grid">
-          {results.map(({ card, setCode }) => (
-            <div className="cardtile" key={card.id} onClick={() => openInspector(card)}>
-              {card.image_small && <img src={card.image_small} alt={card.name} />}
-              <span className="price-badge" title="Market price, via Scryfall">{formatPrice(card.price_usd)}</span>
-              <button
-                className="sealed-buy-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  buyCard(card, setCode);
-                }}
-                disabled={card.price_usd != null && remaining < card.price_usd}
-              >
-                Buy
-              </button>
-            </div>
-          ))}
+          {results.map(({ card, setCode }) => {
+            const price = effectivePrice(card);
+            const isEstimated = card.price_usd == null;
+            return (
+              <div className="cardtile" key={card.id} onClick={() => openInspector(card)}>
+                {card.image_small && <img src={card.image_small} alt={card.name} />}
+                <span className="price-badge" title={isEstimated ? "No Scryfall market price — estimated by rarity" : "Market price, via Scryfall"}>
+                  {isEstimated ? "~" : ""}{formatPrice(price)}
+                </span>
+                <button
+                  className="sealed-buy-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    buyCard(card, setCode);
+                  }}
+                  disabled={remaining < price}
+                >
+                  Buy
+                </button>
+              </div>
+            );
+          })}
           {results.length === 0 && <p className="hint">No cards match those filters in your allowed sets.</p>}
         </div>
       </div>

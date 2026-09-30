@@ -2,10 +2,11 @@ import { useMemo, useState } from "react";
 import { useSealed } from "../../store/useSealed";
 import { useInspector } from "../../store/useInspector";
 import { useGame } from "../../store/useGame";
+import { effectivePrice } from "../../lib/scryfall";
 import type { CardData } from "../../lib/types";
 
-function formatPrice(n: number | null | undefined) {
-  return n == null ? "—" : `$${n.toFixed(2)}`;
+function formatPrice(n: number) {
+  return `$${n.toFixed(2)}`;
 }
 
 export default function PoolBuilder() {
@@ -89,7 +90,7 @@ export default function PoolBuilder() {
                   <span className="li-name"><span className="n">{qty}×</span> {name}</span>
                   <span className="li-meta">
                     <span className="li-cost">{found?.mana_cost ?? ""}</span>
-                    <span className="li-price">{formatPrice(found?.price_usd)}</span>
+                    <span className="li-price">{found ? formatPrice(effectivePrice(found)) : ""}</span>
                   </span>
                 </li>
               );

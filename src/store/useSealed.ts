@@ -180,7 +180,7 @@ export const useSealed = create<SealedStore>((set, get) => ({
 
   buyCard: (card, setCode) => {
     const { budget, spent, pool } = get();
-    const price = card.price_usd ?? 0;
+    const price = scryfall.effectivePrice(card);
     if (budget - spent < price) return;
     set({ spent: spent + price, pool: [...pool, { uid: newId(), card, via: "buy", fromSet: setCode }] });
   },
@@ -189,7 +189,7 @@ export const useSealed = create<SealedStore>((set, get) => ({
     set((s) => {
       const entry = s.pool.find((p) => p.uid === uid);
       if (!entry) return {};
-      const refund = entry.via === "buy" ? entry.card.price_usd ?? 0 : 0;
+      const refund = entry.via === "buy" ? scryfall.effectivePrice(entry.card) : 0;
       const nextPool = s.pool.filter((p) => p.uid !== uid);
       // Clamp the deck selection for this name in case the removed copy was one that had been chosen for the deck.
       const available = poolQtyByName(nextPool, entry.card.name);

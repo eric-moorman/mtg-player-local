@@ -271,6 +271,22 @@ export async function fetchSetList(): Promise<SetInfo[]> {
 
 const RARITIES = ["common", "uncommon", "rare", "mythic"] as const;
 
+// Scryfall has no price for a printing when no vendor has current market data for it
+// (brand-new spoilers, oddball promos, serialized variants, etc). Rather than let the
+// Sealed Pool minigame treat those as free, fall back to a flat rarity-based price.
+const DEFAULT_RARITY_PRICE: Record<(typeof RARITIES)[number], number> = {
+  common: 0.05,
+  uncommon: 0.2,
+  rare: 1,
+  mythic: 5,
+};
+
+export function effectivePrice(card: CardData): number {
+  if (card.price_usd != null) return card.price_usd;
+  const rarity = card.rarity as (typeof RARITIES)[number] | undefined;
+  return (rarity && DEFAULT_RARITY_PRICE[rarity]) ?? DEFAULT_RARITY_PRICE.common;
+}
+
 /**
  * Every card in a set (nonfoil pool, standard rarities only), paginated
  * through Scryfall's search and cached in IndexedDB — this is deliberately a
