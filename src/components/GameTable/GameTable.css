@@ -37,10 +37,17 @@
 .qcards { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 .permtile, .handtile {
-  position: relative; width: 74px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border);
-  cursor: pointer; background: var(--surface-3);
+  position: relative; width: 74px; cursor: pointer;
 }
-.tile-art { display: block; }
+/*
+ * overflow:hidden lives here (not on .permtile/.handtile) deliberately: that
+ * outer tile is also the positioning parent for .ctx-menu, which needs to
+ * pop out past the tile's own edges. Putting overflow:hidden up there was
+ * silently clipping the menu into complete invisibility — it mounted into
+ * the DOM correctly (confirmed) but was never actually rendered on screen,
+ * regardless of whether it was opened via the dots button or right-click.
+ */
+.tile-art { display: block; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-3); }
 .tile-art img { -webkit-user-drag: none; user-select: none; }
 body.kt-dragging { cursor: grabbing; user-select: none; }
 body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
@@ -52,6 +59,7 @@ body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
 .permtile.tapped::before {
   content: "tapped"; position: absolute; top: 0; left: 0; right: 0; background: rgba(20, 18, 12, 0.72); color: #fff;
   font-size: 0.55rem; text-align: center; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.1rem 0; z-index: 1;
+  border-radius: 6px 6px 0 0;
 }
 .permtile.mini.tapped::before { font-size: 0.48rem; }
 .stackbadge { position: absolute; bottom: 3px; right: 3px; background: rgba(20, 18, 12, 0.75); color: #fff; font-size: 0.62rem; font-weight: 700; border-radius: 999px; padding: 0.05rem 0.35rem; font-variant-numeric: tabular-nums; z-index: 1; }
