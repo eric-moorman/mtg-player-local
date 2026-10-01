@@ -218,7 +218,7 @@ export default function DeckBuilder() {
 
       <div className="db-grid">
         <div className="db-col">
-          <div className="filter-block">
+          <div className="filter-block" data-tour="db-search">
             <label>Search</label>
             <input type="text" placeholder="Card name…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
@@ -303,7 +303,7 @@ export default function DeckBuilder() {
         </div>
 
         <div className="db-col">
-          <div className="card-grid">
+          <div className="card-grid" data-tour="db-results">
             {results.map((c) => (
               <div className="cardtile" key={c.id} onClick={() => openInspector(c)}>
                 {c.image_small && <img src={c.image_small} alt={c.name} />}
@@ -320,7 +320,7 @@ export default function DeckBuilder() {
         </div>
 
         <div className="db-col">
-          <div className="decklist">
+          <div className="decklist" data-tour="db-decklist">
             <input className="deck-name-input" value={deckName} onChange={(e) => setDeckName(e.target.value)} />
             <div className="count">
               {total} cards

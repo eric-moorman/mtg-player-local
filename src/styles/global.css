@@ -115,6 +115,8 @@ input[type="text"], input[type="number"], input[type="password"], select {
 .sidebar-bottom { margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.2rem; }
 .sidebar-report { color: var(--text-dim); font-size: 0.8rem; }
 .sidebar-report:hover { color: var(--text); }
+.sidebar-tour { color: var(--text-dim); font-size: 0.8rem; }
+.sidebar-tour:hover { color: var(--text); }
 .sidebar-account { color: var(--text-dim); font-size: 0.8rem; }
 .sidebar-account:hover { color: var(--text); }
 .sidebar-account.signed-in { color: var(--accent-strong); font-weight: 600; }
