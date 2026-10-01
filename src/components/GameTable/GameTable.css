@@ -41,6 +41,7 @@
   cursor: pointer; background: var(--surface-3);
 }
 .tile-art { display: block; }
+.tile-art img { -webkit-user-drag: none; user-select: none; }
 body.kt-dragging { cursor: grabbing; user-select: none; }
 body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
 .permtile img, .handtile img { width: 100%; display: block; }

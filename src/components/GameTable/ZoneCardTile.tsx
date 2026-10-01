@@ -47,7 +47,14 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
             : undefined
         }
       >
-        {card.image_small ? <img src={card.image_small} alt={card.name} /> : <div className="permtile-placeholder">{card.name.slice(0, 1)}</div>}
+        {card.image_small ? (
+          // img elements are natively draggable in real browsers even without a draggable
+          // attribute — without this, a real mouse drag triggers Chrome's own native image
+          // drag instead of the manual tracking above, and swallows the mouseup entirely.
+          <img src={card.image_small} alt={card.name} draggable={false} />
+        ) : (
+          <div className="permtile-placeholder">{card.name.slice(0, 1)}</div>
+        )}
       </div>
       {interactive && dispatch && canPlay && (
         <button

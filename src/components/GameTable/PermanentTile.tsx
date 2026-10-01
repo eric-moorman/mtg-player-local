@@ -56,7 +56,7 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
         }
       >
         {representative.image_small ? (
-          <img src={representative.image_small} alt={representative.name} />
+          <img src={representative.image_small} alt={representative.name} draggable={false} />
         ) : (
           <div className="permtile-placeholder">{representative.name.slice(0, 1).toUpperCase()}</div>
         )}
