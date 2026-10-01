@@ -81,9 +81,10 @@ body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
   position: absolute; top: 20px; left: 78px; z-index: 20; background: var(--surface); border: 1px solid var(--border);
   border-radius: 10px; box-shadow: 0 12px 28px -14px var(--shadow); padding: 0.4rem; width: 210px; font-size: 0.82rem;
   display: flex; flex-direction: column; gap: 0.1rem;
-  /* Hand cards fan out via a rotation on .handtile (--fan-rot); counter-rotate so the menu,
-     a child of that rotated tile, still reads upright instead of tilting with the card. */
-  transform: rotate(calc(var(--fan-rot, 0deg) * -1));
+  /* Hand cards fan out via rotation + a y-offset on .handtile (--fan-rot/--fan-y); counter-apply
+     both, in reverse order, so the menu (a child of that transformed tile) still appears upright
+     and in its normal position instead of inheriting the card's tilt/rise. */
+  transform: rotate(calc(var(--fan-rot, 0deg) * -1)) translateY(calc(var(--fan-y, 0px) * -1));
 }
 .ctx-menu .hd { padding: 0.3rem 0.55rem; color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); margin-bottom: 0.25rem; }
 .ctx-menu > button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 0.5rem 0.55rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
@@ -134,13 +135,20 @@ body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
 .reveal-toggle { font-size: 0.72rem; padding: 0.25rem 0.6rem; }
 .hand-row { display: flex; flex-wrap: wrap; align-items: flex-end; padding: 0.7rem 0.4rem 0.15rem; }
 .hand-row .handtile {
-  transform: rotate(var(--fan-rot, 0deg)); transform-origin: bottom center;
+  transform: translateY(var(--fan-y, 0px)) rotate(var(--fan-rot, 0deg)); transform-origin: bottom center;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .hand-row .handtile + .handtile { margin-left: -24px; }
 .hand-row .handtile.mini + .handtile.mini { margin-left: -14px; }
+/* Each card's transform makes it its own stacking context, and at rest DOM order wins ties —
+   so a card's RIGHT portion (which the next card overlaps) is always painted over by that next
+   card. The dots button has to live on the left, in the portion nothing normally overlaps —
+   with enough inset that it clears the previous card's rotated silhouette too, not just its
+   un-rotated layout box. (Hover below avoids growing a card's footprint into a neighbor's
+   control for the same reason — only lift/shadow/z-index change, not size.) */
+.hand-row .handtile .menubtn { left: 8px; right: auto; }
 .hand-row .handtile:hover {
-  transform: translateY(-16px) scale(1.08) rotate(var(--fan-rot, 0deg));
+  transform: translateY(calc(var(--fan-y, 0px) - 16px)) rotate(var(--fan-rot, 0deg));
   box-shadow: 0 12px 20px -8px var(--shadow); z-index: 20;
 }
 .dice-col { display: flex; flex-direction: column; gap: 0.4rem; }

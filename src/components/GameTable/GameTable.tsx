@@ -12,11 +12,18 @@ import type { PlayerState } from "../../lib/types";
 import "./GameTable.css";
 
 const HAND_FAN_SPREAD_DEG = 16;
+const HAND_FAN_RISE_PX = 12;
 
-/** A smooth fan across the whole hand (leftmost/rightmost tilt outward, center stays flat) rather than a fixed per-card angle. */
+/**
+ * A smooth fan across the whole hand: leftmost/rightmost cards tilt outward
+ * and droop down slightly, the center card stays flat and sits highest —
+ * like cards actually held and fanned in a hand, not just rotated in place.
+ */
 function fanStyle(index: number, total: number): React.CSSProperties {
-  const angle = total > 1 ? (index / (total - 1) - 0.5) * HAND_FAN_SPREAD_DEG : 0;
-  return { "--fan-rot": `${angle}deg` } as React.CSSProperties;
+  const t = total > 1 ? index / (total - 1) - 0.5 : 0; // -0.5 (leftmost) .. 0.5 (rightmost)
+  const angle = t * HAND_FAN_SPREAD_DEG;
+  const rise = t * t * 4 * HAND_FAN_RISE_PX; // 0 at center, HAND_FAN_RISE_PX at either edge
+  return { "--fan-rot": `${angle}deg`, "--fan-y": `${rise}px` } as React.CSSProperties;
 }
 
 function OpponentBoard({ player }: { player: PlayerState }) {
