@@ -8,6 +8,7 @@ import ZoneStacks from "./ZoneStacks";
 import TurnTracker from "./TurnTracker";
 import LogPanel from "./LogPanel";
 import TokenModal from "./TokenModal";
+import DebugEventLog from "./DebugEventLog";
 import type { PlayerState } from "../../lib/types";
 import "./GameTable.css";
 
@@ -201,6 +202,7 @@ export default function GameTable() {
       </div>
 
       {tokenModalOpen && <TokenModal playerId={me.id} dispatch={dispatch} onClose={() => setTokenModalOpen(false)} />}
+      <DebugEventLog />
     </section>
   );
 }
