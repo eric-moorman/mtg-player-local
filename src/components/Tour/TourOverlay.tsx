@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTour } from "../../store/useTour";
 import { useGame } from "../../store/useGame";
 import { TOUR_STEPS } from "../../lib/tourSteps";
@@ -14,6 +14,7 @@ interface Rect {
 const SPOTLIGHT_PAD = 8;
 const CARD_WIDTH = 320;
 const CARD_MARGIN = 14;
+const VIEWPORT_MARGIN = 16;
 const LOCATE_RETRY_MS = 80;
 const LOCATE_MAX_ATTEMPTS = 20;
 
@@ -33,9 +34,24 @@ export default function TourOverlay() {
   const [rect, setRect] = useState<Rect | null>(null);
   const [ready, setReady] = useState(false);
   const retryTimer = useRef<number | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [cardStyle, setCardStyle] = useState<React.CSSProperties>({
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+  });
 
   const step = TOUR_STEPS[stepIndex];
   const isLast = stepIndex === TOUR_STEPS.length - 1;
+
+  const spot = rect
+    ? {
+        top: rect.top - SPOTLIGHT_PAD,
+        left: rect.left - SPOTLIGHT_PAD,
+        width: rect.width + SPOTLIGHT_PAD * 2,
+        height: rect.height + SPOTLIGHT_PAD * 2,
+      }
+    : null;
 
   function handleNext() {
     if (isLast) stop();
@@ -104,6 +120,37 @@ export default function TourOverlay() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, ready, stepIndex]);
 
+  // Position the tooltip card after it's rendered (so we know its real height — the body
+  // copy wraps differently per step) and clamp it fully inside the viewport. The spotlighted
+  // element can be taller than the viewport itself (e.g. a long card-results grid), so
+  // "below/above the element" isn't always on-screen — the clamp is what actually matters.
+  useLayoutEffect(() => {
+    if (!ready) return;
+    const node = cardRef.current;
+    if (!node) return;
+
+    if (!spot) {
+      setCardStyle({ top: "50%", left: "50%", transform: "translate(-50%, -50%)" });
+      return;
+    }
+
+    const cardH = node.offsetHeight;
+    const cardW = node.offsetWidth;
+    const maxTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - cardH - VIEWPORT_MARGIN);
+    const maxLeft = Math.max(VIEWPORT_MARGIN, window.innerWidth - cardW - VIEWPORT_MARGIN);
+
+    let top = spot.top + spot.height + CARD_MARGIN;
+    if (top > maxTop) {
+      const above = spot.top - CARD_MARGIN - cardH;
+      top = above >= VIEWPORT_MARGIN ? above : maxTop;
+    }
+    top = Math.min(Math.max(top, VIEWPORT_MARGIN), maxTop);
+    const left = Math.min(Math.max(spot.left, VIEWPORT_MARGIN), maxLeft);
+
+    setCardStyle({ top, left, transform: "none" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, spot?.top, spot?.left, spot?.width, spot?.height]);
+
   // Keyboard controls.
   useEffect(() => {
     if (!active) return;
@@ -119,27 +166,6 @@ export default function TourOverlay() {
 
   if (!active || !step || !ready) return null;
 
-  const spot = rect
-    ? {
-        top: rect.top - SPOTLIGHT_PAD,
-        left: rect.left - SPOTLIGHT_PAD,
-        width: rect.width + SPOTLIGHT_PAD * 2,
-        height: rect.height + SPOTLIGHT_PAD * 2,
-      }
-    : null;
-
-  let cardStyle: React.CSSProperties;
-  if (spot) {
-    const spaceBelow = window.innerHeight - (spot.top + spot.height);
-    const placeBelow = spaceBelow > 190 || spot.top < 190;
-    const left = Math.min(Math.max(spot.left, 16), window.innerWidth - CARD_WIDTH - 16);
-    cardStyle = placeBelow
-      ? { top: spot.top + spot.height + CARD_MARGIN, left }
-      : { bottom: window.innerHeight - spot.top + CARD_MARGIN, left };
-  } else {
-    cardStyle = { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
-  }
-
   return (
     <div className={"tour-backdrop" + (spot ? "" : " tour-backdrop-dim")} onClick={stop}>
       {spot && (
@@ -149,6 +175,7 @@ export default function TourOverlay() {
         />
       )}
       <div
+        ref={cardRef}
         className="tour-card"
         style={{ ...cardStyle, width: CARD_WIDTH }}
         role="dialog"
