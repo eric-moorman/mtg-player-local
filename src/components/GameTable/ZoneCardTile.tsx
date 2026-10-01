@@ -42,7 +42,11 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
   }
 
   return (
-    <div className={"handtile" + (mini ? " mini" : "")} style={style} onContextMenu={draggable ? openMenu : undefined}>
+    <div
+      className={"handtile" + (mini ? " mini" : "") + (menuOpen ? " menu-open" : "")}
+      style={style}
+      onContextMenu={draggable ? openMenu : undefined}
+    >
       <div
         className="tile-art"
         onClick={() => { if (consumeSuppressedClick()) return; openInspector(card); }}

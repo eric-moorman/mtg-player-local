@@ -39,6 +39,11 @@
 .permtile, .handtile {
   position: relative; width: 74px; cursor: pointer;
 }
+/* Each tile's transform makes it its own stacking context, so a card's open ctx-menu is only
+   above neighbors while THIS card is the one with :hover's z-index boost — move the mouse off
+   it (e.g. toward the menu itself) and a neighbor can paint back over the menu. Keep a tile on
+   top of its neighbors for as long as its own menu is open, regardless of hover. */
+.permtile.menu-open, .hand-row .handtile.menu-open { z-index: 30; }
 /*
  * overflow:hidden lives here (not on .permtile/.handtile) deliberately: that
  * outer tile is also the positioning parent for .ctx-menu, which needs to

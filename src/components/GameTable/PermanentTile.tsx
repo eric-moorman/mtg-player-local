@@ -47,7 +47,7 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
 
   return (
     <div
-      className={"permtile" + (mini ? " mini" : "") + (representative.tapped ? " tapped" : "")}
+      className={"permtile" + (mini ? " mini" : "") + (representative.tapped ? " tapped" : "") + (menuOpen ? " menu-open" : "")}
       onContextMenu={draggable ? openMenu : undefined}
     >
       <div
