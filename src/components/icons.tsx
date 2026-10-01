@@ -68,6 +68,15 @@ export function IconUser({ size = 18 }: IconProps) {
   );
 }
 
+export function IconCompass({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" {...base}>
+      <circle cx="10" cy="10" r="7.6" />
+      <path d="M12.8 7.2l-1.6 4.1-4.1 1.6 1.6-4.1 4.1-1.6Z" />
+    </svg>
+  );
+}
+
 export function IconChevron({ size = 14, direction = "left" }: IconProps & { direction?: "left" | "right" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" {...base} style={{ transform: direction === "right" ? "scaleX(-1)" : undefined }}>

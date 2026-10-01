@@ -49,7 +49,7 @@ function AccountSection() {
 
   if (user) {
     return (
-      <div className="account-card">
+      <div className="account-card" data-tour="settings-account">
         <label className="section-label">Account</label>
         <p className="small-note">
           Synced as <strong>{user.username}</strong> — decks, identity, playmat, and sealed-pool settings follow you to any
@@ -63,7 +63,7 @@ function AccountSection() {
   }
 
   return (
-    <div className="account-card">
+    <div className="account-card" data-tour="settings-account">
       <label className="section-label">Account</label>
       <p className="small-note">
         Optional — everything works fine without one. Sign in to sync decks and preferences across devices.
@@ -141,7 +141,7 @@ export default function Settings() {
       <div className="settings-grid">
         <AccountSection />
 
-        <div>
+        <div data-tour="settings-playmat">
           <label className="section-label">Playmat</label>
           <div className="swatch-row">
             {playmats.map((pm) => (
@@ -165,7 +165,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="field-row">
+        <div className="field-row" data-tour="settings-identity">
           <div className="field">
             <label>Display name</label>
             <input

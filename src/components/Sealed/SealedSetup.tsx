@@ -29,7 +29,7 @@ export default function SealedSetup() {
   }, [loadAvailableSets]);
 
   return (
-    <section>
+    <section data-tour="sealed-main">
       <div className="screen-head">
         <h2>Sealed Pool</h2>
         <span className="sub">Set a budget, pick your sets, open packs or buy cards directly, then build the best deck you can</span>

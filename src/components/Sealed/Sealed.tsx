@@ -31,7 +31,7 @@ export default function Sealed() {
   const remaining = budget - spent;
 
   return (
-    <section>
+    <section data-tour="sealed-main">
       <div className="screen-head">
         <h2>Sealed Pool</h2>
         <span className="sub">Spend your budget, then build a deck from whatever you end up with</span>
