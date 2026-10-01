@@ -79,16 +79,19 @@ body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
 
 .ctx-menu {
   position: absolute; top: 20px; left: 78px; z-index: 20; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; box-shadow: 0 12px 28px -14px var(--shadow); padding: 0.35rem; width: 190px; font-size: 0.78rem;
-  display: flex; flex-direction: column; gap: 0.15rem;
+  border-radius: 10px; box-shadow: 0 12px 28px -14px var(--shadow); padding: 0.4rem; width: 210px; font-size: 0.82rem;
+  display: flex; flex-direction: column; gap: 0.1rem;
+  /* Hand cards fan out via a rotation on .handtile (--fan-rot); counter-rotate so the menu,
+     a child of that rotated tile, still reads upright instead of tilting with the card. */
+  transform: rotate(calc(var(--fan-rot, 0deg) * -1));
 }
-.ctx-menu .hd { padding: 0.3rem 0.5rem; color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); margin-bottom: 0.2rem; }
-.ctx-menu > button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 0.4rem 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.76rem; }
+.ctx-menu .hd { padding: 0.3rem 0.55rem; color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); margin-bottom: 0.25rem; }
+.ctx-menu > button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 0.5rem 0.55rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
 .ctx-menu > button:hover { background: var(--surface-2); }
-.counter-row, .move-row { display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; font-size: 0.74rem; flex-wrap: wrap; }
+.counter-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.55rem; font-size: 0.82rem; }
 .counter-row span:first-child { color: var(--text-dim); flex: 1; }
-.counter-row button, .move-row button { width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-size: 0.75rem; line-height: 1; }
-.move-row button { width: auto; padding: 0.15rem 0.4rem; font-size: 0.68rem; }
+.counter-row button { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-size: 0.85rem; line-height: 1; }
+.counter-row button:hover { background: var(--surface-3); }
 
 .table-main { display: grid; grid-template-columns: 1fr 240px; gap: 1.1rem; align-items: start; }
 @media (max-width: 900px) { .table-main { grid-template-columns: 1fr; } }

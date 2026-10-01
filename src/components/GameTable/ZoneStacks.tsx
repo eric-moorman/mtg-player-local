@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDrag } from "../../store/useDrag";
+import { useCloseOnOutside } from "../../lib/useCloseOnOutside";
 import ZoneBrowser from "./ZoneBrowser";
 import type { CardInstance, GameAction, ZoneName } from "../../lib/types";
 
@@ -15,13 +16,24 @@ interface StackProps {
 function ZoneStack({ label, count, onClick, dropZone, menu }: StackProps) {
   const [hovering, setHovering] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const dragActive = useDrag((s) => s.active);
+
+  useCloseOnOutside(menuOpen, menuRef, () => setMenuOpen(false));
 
   return (
     <div className={"zone-stack" + (onClick ? " clickable" : "")}>
       <div
         className={"zone-stack-face" + (dragActive && hovering ? " drag-over" : "")}
         onClick={onClick}
+        onContextMenu={
+          menu
+            ? (e) => {
+                e.preventDefault();
+                setMenuOpen(true);
+              }
+            : undefined
+        }
         data-dropzone={dropZone}
         onMouseEnter={dropZone ? () => setHovering(true) : undefined}
         onMouseLeave={dropZone ? () => setHovering(false) : undefined}
@@ -34,7 +46,8 @@ function ZoneStack({ label, count, onClick, dropZone, menu }: StackProps) {
               e.stopPropagation();
               setMenuOpen((v) => !v);
             }}
-            aria-label={`More ${label} actions`}
+            aria-label={`More ${label} actions (or right-click)`}
+            title="More actions (or right-click)"
           >
             ⋮
           </button>
@@ -42,7 +55,7 @@ function ZoneStack({ label, count, onClick, dropZone, menu }: StackProps) {
       </div>
       <div className="zone-stack-label">{label}</div>
       {menuOpen && menu && (
-        <div className="ctx-menu zone-stack-menu" onClick={(e) => e.stopPropagation()}>
+        <div className="ctx-menu zone-stack-menu" ref={menuRef} onClick={(e) => e.stopPropagation()}>
           {menu(() => setMenuOpen(false))}
         </div>
       )}

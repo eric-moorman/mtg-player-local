@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { PermanentStack } from "../../lib/cardRules";
 import { primaryCounterBadge, getQuadrant } from "../../lib/cardRules";
 import { useInspector } from "../../store/useInspector";
 import { startPointerDrag, consumeSuppressedClick } from "../../lib/pointerDrag";
+import { useCloseOnOutside } from "../../lib/useCloseOnOutside";
 import type { GameAction, ZoneName } from "../../lib/types";
 
 interface Props {
@@ -22,6 +23,7 @@ const MOVE_TARGETS: { zone: ZoneName; label: string }[] = [
 
 export default function PermanentTile({ stack, playerId, mini, interactive, dispatch }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const openInspector = useInspector((s) => s.open);
   const { representative, instances } = stack;
   const targetIid = instances[0].iid;
@@ -34,6 +36,8 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
   }
 
   const draggable = interactive && !!dispatch;
+
+  useCloseOnOutside(menuOpen, menuRef, () => setMenuOpen(false));
 
   function openMenu(e: React.MouseEvent) {
     e.preventDefault();
@@ -84,7 +88,7 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
       )}
 
       {menuOpen && (
-        <div className="ctx-menu" onClick={(e) => e.stopPropagation()}>
+        <div className="ctx-menu" ref={menuRef} onClick={(e) => e.stopPropagation()}>
           <div className="hd">{representative.name}</div>
           <button onClick={() => act({ k: "tap", playerId, iid: targetIid })}>
             {representative.tapped ? "Untap" : "Tap"}
@@ -101,13 +105,11 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
               <button onClick={() => act({ k: "addCounter", playerId, iid: targetIid, label: "loyalty", delta: 1 })}>+</button>
             </div>
           )}
-          <div className="move-row">
-            {MOVE_TARGETS.map((m) => (
-              <button key={m.zone} onClick={() => act({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: m.zone })}>
-                {m.label}
-              </button>
-            ))}
-          </div>
+          {MOVE_TARGETS.map((m) => (
+            <button key={m.zone} onClick={() => act({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: m.zone })}>
+              Move to {m.label}
+            </button>
+          ))}
           <button onClick={() => act({ k: "reveal", playerId, iid: targetIid, from: "battlefield" })}>Reveal to all</button>
         </div>
       )}

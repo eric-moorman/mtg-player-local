@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useInspector } from "../../store/useInspector";
 import { startPointerDrag, consumeSuppressedClick } from "../../lib/pointerDrag";
+import { useCloseOnOutside } from "../../lib/useCloseOnOutside";
 import type { CardInstance, GameAction, ZoneName } from "../../lib/types";
 
 interface Props {
@@ -25,11 +26,14 @@ const PLAYABLE_FROM: ZoneName[] = ["hand", "command"];
 
 export default function ZoneCardTile({ card, playerId, from, interactive = true, mini, dispatch, style }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const openInspector = useInspector((s) => s.open);
   const canPlay = PLAYABLE_FROM.includes(from);
   // Hand/command cards get a dedicated "Play" button instead of repeating Battlefield here.
   const moveTargets = ALL_TARGETS.filter((t) => t.zone !== from && !(canPlay && t.zone === "battlefield"));
   const draggable = interactive && !!dispatch;
+
+  useCloseOnOutside(menuOpen, menuRef, () => setMenuOpen(false));
 
   function openMenu(e: React.MouseEvent) {
     e.preventDefault();
@@ -88,21 +92,19 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
         </button>
       )}
       {menuOpen && dispatch && (
-        <div className="ctx-menu" onClick={(e) => e.stopPropagation()}>
+        <div className="ctx-menu" ref={menuRef} onClick={(e) => e.stopPropagation()}>
           <div className="hd">{card.name}</div>
-          <div className="move-row">
-            {moveTargets.map((m) => (
-              <button
-                key={m.zone}
-                onClick={() => {
-                  dispatch({ k: "moveCard", playerId, iid: card.iid, from, to: m.zone });
-                  setMenuOpen(false);
-                }}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
+          {moveTargets.map((m) => (
+            <button
+              key={m.zone}
+              onClick={() => {
+                dispatch({ k: "moveCard", playerId, iid: card.iid, from, to: m.zone });
+                setMenuOpen(false);
+              }}
+            >
+              Move to {m.label}
+            </button>
+          ))}
           <button
             onClick={() => {
               dispatch({ k: "reveal", playerId, iid: card.iid, from });
