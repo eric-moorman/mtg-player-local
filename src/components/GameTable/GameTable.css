@@ -51,6 +51,11 @@
 .tile-art img { -webkit-user-drag: none; user-select: none; }
 body.kt-dragging { cursor: grabbing; user-select: none; }
 body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
+.kt-drag-ghost {
+  position: fixed; top: 0; left: 0; width: 74px; pointer-events: none; z-index: 9999;
+  border-radius: 6px; box-shadow: 0 16px 32px -12px var(--shadow); opacity: 0.9;
+}
+.kt-drag-ghost img { width: 100%; display: block; border-radius: 6px; }
 .permtile img, .handtile img { width: 100%; display: block; }
 .permtile.mini, .handtile.mini { width: 44px; }
 .permtile-placeholder { width: 74px; aspect-ratio: 5/7; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-dim); background: var(--surface-3); }

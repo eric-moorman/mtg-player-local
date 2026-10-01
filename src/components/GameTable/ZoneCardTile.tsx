@@ -52,7 +52,8 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
                 startPointerDrag(
                   e,
                   (zone) => { if (zone !== from) dispatch!({ k: "moveCard", playerId, iid: card.iid, from, to: zone as ZoneName }); },
-                  () => setMenuOpen(true)
+                  () => setMenuOpen(true),
+                  card.image_small
                 )
             : undefined
         }

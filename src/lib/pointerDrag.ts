@@ -37,16 +37,38 @@ export function consumeSuppressedClick(): boolean {
   return false;
 }
 
+/** Floating preview of the card being dragged, since native HTML5 drag (and its automatic
+ *  ghost thumbnail) is deliberately not used here — see the module comment above. Purely
+ *  visual: pointer-events:none so it never interferes with elementFromPoint drop-target
+ *  detection in onUp below. */
+function createDragGhost(imageSrc: string, x: number, y: number): HTMLDivElement {
+  const ghost = document.createElement("div");
+  ghost.className = "kt-drag-ghost";
+  const img = document.createElement("img");
+  img.src = imageSrc;
+  img.draggable = false;
+  ghost.appendChild(img);
+  document.body.appendChild(ghost);
+  positionDragGhost(ghost, x, y);
+  return ghost;
+}
+
+function positionDragGhost(ghost: HTMLDivElement, x: number, y: number) {
+  ghost.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(-6deg)`;
+}
+
 export function startPointerDrag(
   e: { button: number; clientX: number; clientY: number },
   onDrop: (zone: string) => void,
-  onLongPress?: () => void
+  onLongPress?: () => void,
+  dragImageSrc?: string | null
 ) {
   if (e.button !== 0) return;
   const startX = e.clientX;
   const startY = e.clientY;
   let dragging = false;
   let longPressed = false;
+  let ghost: HTMLDivElement | null = null;
 
   const timer = onLongPress
     ? window.setTimeout(() => {
@@ -60,19 +82,26 @@ export function startPointerDrag(
     : null;
 
   function onMove(ev: MouseEvent) {
-    if (dragging || longPressed) return;
-    if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < THRESHOLD_PX) return;
-    if (timer != null) window.clearTimeout(timer);
-    dragging = true;
-    suppressNextClick = true;
-    useDrag.getState().setActive(true);
-    document.body.classList.add("kt-dragging");
+    if (!dragging && !longPressed) {
+      if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < THRESHOLD_PX) return;
+      if (timer != null) window.clearTimeout(timer);
+      dragging = true;
+      suppressNextClick = true;
+      useDrag.getState().setActive(true);
+      document.body.classList.add("kt-dragging");
+      if (dragImageSrc) ghost = createDragGhost(dragImageSrc, ev.clientX, ev.clientY);
+    }
+    if (dragging && ghost) positionDragGhost(ghost, ev.clientX, ev.clientY);
   }
 
   function cleanup() {
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("mouseup", onUp);
     if (timer != null) window.clearTimeout(timer);
+    if (ghost) {
+      ghost.remove();
+      ghost = null;
+    }
   }
 
   function onUp(ev: MouseEvent) {

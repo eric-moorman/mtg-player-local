@@ -59,7 +59,8 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
                 startPointerDrag(
                   e,
                   (zone) => { if (zone !== "battlefield") dispatch!({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: zone as ZoneName }); },
-                  () => setMenuOpen(true)
+                  () => setMenuOpen(true),
+                  representative.image_small
                 )
             : undefined
         }
