@@ -10,6 +10,7 @@ interface Props {
   interactive?: boolean;
   mini?: boolean;
   dispatch?: (a: GameAction) => void;
+  style?: React.CSSProperties;
 }
 
 const ALL_TARGETS: { zone: ZoneName; label: string }[] = [
@@ -22,7 +23,7 @@ const ALL_TARGETS: { zone: ZoneName; label: string }[] = [
 
 const PLAYABLE_FROM: ZoneName[] = ["hand", "command"];
 
-export default function ZoneCardTile({ card, playerId, from, interactive = true, mini, dispatch }: Props) {
+export default function ZoneCardTile({ card, playerId, from, interactive = true, mini, dispatch, style }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const openInspector = useInspector((s) => s.open);
   const canPlay = PLAYABLE_FROM.includes(from);
@@ -37,7 +38,7 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
   }
 
   return (
-    <div className={"handtile" + (mini ? " mini" : "")} onContextMenu={draggable ? openMenu : undefined}>
+    <div className={"handtile" + (mini ? " mini" : "")} style={style} onContextMenu={draggable ? openMenu : undefined}>
       <div
         className="tile-art"
         onClick={() => { if (consumeSuppressedClick()) return; openInspector(card); }}

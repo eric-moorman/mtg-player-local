@@ -11,6 +11,14 @@ import TokenModal from "./TokenModal";
 import type { PlayerState } from "../../lib/types";
 import "./GameTable.css";
 
+const HAND_FAN_SPREAD_DEG = 16;
+
+/** A smooth fan across the whole hand (leftmost/rightmost tilt outward, center stays flat) rather than a fixed per-card angle. */
+function fanStyle(index: number, total: number): React.CSSProperties {
+  const angle = total > 1 ? (index / (total - 1) - 0.5) * HAND_FAN_SPREAD_DEG : 0;
+  return { "--fan-rot": `${angle}deg` } as React.CSSProperties;
+}
+
 function OpponentBoard({ player }: { player: PlayerState }) {
   return (
     <div className="opp">
@@ -24,8 +32,16 @@ function OpponentBoard({ player }: { player: PlayerState }) {
         <div>
           <div className="qlabel">Hand (revealed)</div>
           <div className="hand-row">
-            {player.zones.hand.map((card) => (
-              <ZoneCardTile key={card.iid} card={card} playerId={player.id} from="hand" interactive={false} mini />
+            {player.zones.hand.map((card, i) => (
+              <ZoneCardTile
+                key={card.iid}
+                card={card}
+                playerId={player.id}
+                from="hand"
+                interactive={false}
+                mini
+                style={fanStyle(i, player.zones.hand.length)}
+              />
             ))}
           </div>
         </div>
@@ -149,8 +165,15 @@ export default function GameTable() {
                 </button>
               </div>
               <div className="hand-row">
-                {me.zones.hand.map((card) => (
-                  <ZoneCardTile key={card.iid} card={card} playerId={me.id} from="hand" dispatch={dispatch} />
+                {me.zones.hand.map((card, i) => (
+                  <ZoneCardTile
+                    key={card.iid}
+                    card={card}
+                    playerId={me.id}
+                    from="hand"
+                    dispatch={dispatch}
+                    style={fanStyle(i, me.zones.hand.length)}
+                  />
                 ))}
                 {me.zones.hand.length === 0 && <span className="hint">Your hand is empty.</span>}
               </div>
