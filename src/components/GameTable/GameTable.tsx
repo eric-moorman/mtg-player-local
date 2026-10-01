@@ -1,13 +1,30 @@
 import { useState } from "react";
 import { useGame } from "../../store/useGame";
+import { useDrag } from "../../store/useDrag";
 import Quadrants from "./Quadrants";
 import ZoneCardTile from "./ZoneCardTile";
 import CommandZone from "./CommandZone";
+import ZoneStacks from "./ZoneStacks";
 import TurnTracker from "./TurnTracker";
 import LogPanel from "./LogPanel";
 import TokenModal from "./TokenModal";
 import type { PlayerState } from "../../lib/types";
 import "./GameTable.css";
+
+const HAND_FAN_SPREAD_DEG = 16;
+const HAND_FAN_RISE_PX = 12;
+
+/**
+ * A smooth fan across the whole hand: leftmost/rightmost cards tilt outward
+ * and droop down slightly, the center card stays flat and sits highest —
+ * like cards actually held and fanned in a hand, not just rotated in place.
+ */
+function fanStyle(index: number, total: number): React.CSSProperties {
+  const t = total > 1 ? index / (total - 1) - 0.5 : 0; // -0.5 (leftmost) .. 0.5 (rightmost)
+  const angle = t * HAND_FAN_SPREAD_DEG;
+  const rise = t * t * 4 * HAND_FAN_RISE_PX; // 0 at center, HAND_FAN_RISE_PX at either edge
+  return { "--fan-rot": `${angle}deg`, "--fan-y": `${rise}px` } as React.CSSProperties;
+}
 
 function OpponentBoard({ player }: { player: PlayerState }) {
   return (
@@ -18,8 +35,26 @@ function OpponentBoard({ player }: { player: PlayerState }) {
       </div>
       <CommandZone command={player.zones.command} playerId={player.id} interactive={false} mini />
       <Quadrants battlefield={player.zones.battlefield} playerId={player.id} interactive={false} mini />
+      {player.handRevealed && player.zones.hand.length > 0 && (
+        <div>
+          <div className="qlabel">Hand (revealed)</div>
+          <div className="hand-row">
+            {player.zones.hand.map((card, i) => (
+              <ZoneCardTile
+                key={card.iid}
+                card={card}
+                playerId={player.id}
+                from="hand"
+                interactive={false}
+                mini
+                style={fanStyle(i, player.zones.hand.length)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       <div className="tray-pills">
-        <span className="zone-chip"><b>{player.zones.hand.length}</b> hand</span>
+        <span className="zone-chip"><b>{player.zones.hand.length}</b> hand{player.handRevealed ? " (revealed)" : ""}</span>
         <span className="zone-chip"><b>{player.zones.library.length}</b> lib</span>
         <span className="zone-chip"><b>{player.zones.graveyard.length}</b> gy</span>
         <span className="zone-chip"><b>{player.zones.exile.length}</b> exile</span>
@@ -37,8 +72,9 @@ export default function GameTable() {
   const setScreen = useGame((s) => s.setScreen);
   const playmats = useGame((s) => s.playmats);
   const selectedPlaymat = useGame((s) => s.selectedPlaymat);
-  const [libMenuOpen, setLibMenuOpen] = useState(false);
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
+  const [hoveringBoard, setHoveringBoard] = useState(false);
+  const dragActive = useDrag((s) => s.active);
 
   if (role === "offline" || !gameState) {
     return (
@@ -106,52 +142,69 @@ export default function GameTable() {
           <div className="seat-head">
             <span className="name">{me.name} (you)</span>
             <div className="life-tracker">
-              <button onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life - 1 })}>–</button>
+              <span className="life-label">Life</span>
+              <button className="life-btn minus" onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life - 1 })} aria-label="Lose 1 life">–</button>
               <span className="val">{me.life}</span>
-              <button onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life + 1 })}>+</button>
+              <button className="life-btn plus" onClick={() => dispatch({ k: "setLife", playerId: me.id, life: me.life + 1 })} aria-label="Gain 1 life">+</button>
             </div>
             <button className="btn" onClick={() => setTokenModalOpen(true)}>+ Token</button>
           </div>
 
-          <CommandZone command={me.zones.command} playerId={me.id} interactive dispatch={dispatch} />
-
-          <div className="board-field" style={boardStyle}>
+          <div
+            className={"board-field" + (dragActive && hoveringBoard ? " drag-over" : "")}
+            style={boardStyle}
+            data-dropzone="battlefield"
+            onMouseEnter={() => setHoveringBoard(true)}
+            onMouseLeave={() => setHoveringBoard(false)}
+          >
             <Quadrants battlefield={me.zones.battlefield} playerId={me.id} interactive dispatch={dispatch} />
           </div>
 
           <div className="tray">
-            <div className="hand-row">
-              {me.zones.hand.map((card) => (
-                <ZoneCardTile key={card.iid} card={card} playerId={me.id} from="hand" dispatch={dispatch} />
-              ))}
-              {me.zones.hand.length === 0 && <span className="hint">Your hand is empty.</span>}
-            </div>
-            <div className="divider" />
-            <div className="tray-pills">
-              <div className="pill-menu-wrap">
-                <button className="zone-chip clickable" onClick={() => setLibMenuOpen((v) => !v)}>
-                  <b>{me.zones.library.length}</b> library
+            <div className="hand-col">
+              <div className="hand-head">
+                <span className="qlabel">Hand</span>
+                <button
+                  className="btn reveal-toggle"
+                  onClick={() => dispatch({ k: "setHandRevealed", playerId: me.id, revealed: !me.handRevealed })}
+                >
+                  {me.handRevealed ? "Hide hand" : "Reveal hand"}
                 </button>
-                {libMenuOpen && (
-                  <div className="ctx-menu lib-menu">
-                    <button onClick={() => { dispatch({ k: "draw", playerId: me.id, count: 1 }); setLibMenuOpen(false); }}>Draw 1</button>
-                    <button onClick={() => { dispatch({ k: "shuffleLibrary", playerId: me.id }); setLibMenuOpen(false); }}>Shuffle</button>
-                    <button onClick={() => { dispatch({ k: "mill", playerId: me.id, count: 1 }); setLibMenuOpen(false); }}>Mill 1</button>
-                  </div>
-                )}
               </div>
-              <span className="zone-chip"><b>{me.zones.graveyard.length}</b> graveyard</span>
-              <span className="zone-chip"><b>{me.zones.exile.length}</b> exile</span>
+              <div className="hand-row">
+                {me.zones.hand.map((card, i) => (
+                  <ZoneCardTile
+                    key={card.iid}
+                    card={card}
+                    playerId={me.id}
+                    from="hand"
+                    dispatch={dispatch}
+                    style={fanStyle(i, me.zones.hand.length)}
+                  />
+                ))}
+                {me.zones.hand.length === 0 && <span className="hint">Your hand is empty.</span>}
+              </div>
             </div>
             <div className="divider" />
-            <div className="dice-row">
+            <div className="dice-col">
               <button className="btn" onClick={() => dispatch({ k: "coinFlip", playerId: me.id })}>🪙 Flip</button>
               <button className="btn" onClick={() => dispatch({ k: "diceRoll", playerId: me.id, sides: 6 })}>🎲 Roll d6</button>
             </div>
+            <div className="divider" />
+            <CommandZone command={me.zones.command} playerId={me.id} interactive dispatch={dispatch} />
           </div>
         </div>
 
-        <LogPanel log={gameState.log} onSend={sendChat} />
+        <div className="side-col">
+          <ZoneStacks
+            playerId={me.id}
+            library={me.zones.library}
+            graveyard={me.zones.graveyard}
+            exile={me.zones.exile}
+            dispatch={dispatch}
+          />
+          <LogPanel log={gameState.log} onSend={sendChat} />
+        </div>
       </div>
 
       {tokenModalOpen && <TokenModal playerId={me.id} dispatch={dispatch} onClose={() => setTokenModalOpen(false)} />}

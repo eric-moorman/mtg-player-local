@@ -182,42 +182,6 @@ export async function fetchCardByName(name: string): Promise<CardData | null> {
   return slim(await res.json());
 }
 
-// ---- Printing history ----
-
-export interface Printing {
-  set: string;
-  set_name: string;
-  rarity: string;
-  released_at: string;
-}
-
-const printingsCache = new Map<string, Printing[]>();
-
-/** Every set a card has ever been printed in, newest first. Cached in memory for the session. */
-export async function fetchPrintings(name: string): Promise<Printing[]> {
-  const key = name.toLowerCase();
-  const cached = printingsCache.get(key);
-  if (cached) return cached;
-
-  const query = `!"${name}"`;
-  const res = await politeFetch(
-    `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=released&dir=desc`
-  );
-  if (!res.ok) {
-    printingsCache.set(key, []);
-    return [];
-  }
-  const data = await res.json();
-  const printings: Printing[] = (data.data ?? []).map((c: any) => ({
-    set: (c.set ?? "").toUpperCase(),
-    set_name: c.set_name ?? "",
-    rarity: c.rarity ?? "",
-    released_at: c.released_at ?? "",
-  }));
-  printingsCache.set(key, printings);
-  return printings;
-}
-
 // ---- Decklist text format ----
 
 export function parseDecklistText(text: string): DeckCard[] {

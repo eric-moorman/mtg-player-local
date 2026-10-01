@@ -331,11 +331,15 @@ export default function DeckBuilder() {
                 </span>
               )}
             </div>
-            {commanders.length > 0 && (
+            {commanders.length > 0 ? (
               <div className="commander-summary">
                 {commanders.length === 1 ? "Commander: " : "Commanders: "}
                 {commanders.join(" & ")}
               </div>
+            ) : (
+              deckCards.length > 0 && (
+                <p className="hint commander-hint">Click a card's crown (♛) to set it as your commander — up to two, for Partner pairs.</p>
+              )
             )}
             <ul>
               {deckCards.map((dc) => {

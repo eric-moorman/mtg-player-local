@@ -44,6 +44,8 @@ export interface PlayerState {
   isHost: boolean;
   connected: boolean;
   ready: boolean;
+  /** When true, this player's hand is shown to every viewer instead of being redacted. */
+  handRevealed: boolean;
   zones: Zones;
 }
 
@@ -129,6 +131,7 @@ export type GameAction =
   | { k: "setLife"; playerId: string; life: number }
   | { k: "createToken"; playerId: string; card: CardData }
   | { k: "reveal"; playerId: string; iid: string; from: ZoneName }
+  | { k: "setHandRevealed"; playerId: string; revealed: boolean }
   | { k: "coinFlip"; playerId: string }
   | { k: "diceRoll"; playerId: string; sides: number }
   | { k: "nextPhase" }

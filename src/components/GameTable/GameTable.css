@@ -14,6 +14,7 @@
 
 .command-zone { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.7rem; }
 .command-zone.empty { display: none; }
+.tray .command-zone { margin-bottom: 0; }
 .command-cards { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
 .opp-strip { display: flex; gap: 0.9rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1.1rem; }
@@ -24,8 +25,6 @@
 .zone-chip { background: var(--surface-3); border: none; border-radius: 999px; padding: 0.15rem 0.5rem; font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .zone-chip.clickable { cursor: pointer; }
 .zone-chip b { color: var(--text); font-weight: 700; }
-.pill-menu-wrap { position: relative; }
-.lib-menu { top: calc(100% + 4px); left: 0; width: 130px; }
 
 .quadrants { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "tl tr" "bl br"; gap: 0.6rem; }
 .q-creatures { grid-area: tl; }
@@ -38,9 +37,30 @@
 .qcards { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 .permtile, .handtile {
-  position: relative; width: 74px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border);
-  cursor: pointer; background: var(--surface-3);
+  position: relative; width: 74px; cursor: pointer;
 }
+/* Each tile's transform makes it its own stacking context, so a card's open ctx-menu is only
+   above neighbors while THIS card is the one with :hover's z-index boost — move the mouse off
+   it (e.g. toward the menu itself) and a neighbor can paint back over the menu. Keep a tile on
+   top of its neighbors for as long as its own menu is open, regardless of hover. */
+.permtile.menu-open, .hand-row .handtile.menu-open { z-index: 30; }
+/*
+ * overflow:hidden lives here (not on .permtile/.handtile) deliberately: that
+ * outer tile is also the positioning parent for .ctx-menu, which needs to
+ * pop out past the tile's own edges. Putting overflow:hidden up there was
+ * silently clipping the menu into complete invisibility — it mounted into
+ * the DOM correctly (confirmed) but was never actually rendered on screen,
+ * regardless of whether it was opened via the dots button or right-click.
+ */
+.tile-art { display: block; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-3); }
+.tile-art img { -webkit-user-drag: none; user-select: none; }
+body.kt-dragging { cursor: grabbing; user-select: none; }
+body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
+.kt-drag-ghost {
+  position: fixed; top: 0; left: 0; width: 74px; pointer-events: none; z-index: 9999;
+  border-radius: 6px; box-shadow: 0 16px 32px -12px var(--shadow); opacity: 0.9;
+}
+.kt-drag-ghost img { width: 100%; display: block; border-radius: 6px; }
 .permtile img, .handtile img { width: 100%; display: block; }
 .permtile.mini, .handtile.mini { width: 44px; }
 .permtile-placeholder { width: 74px; aspect-ratio: 5/7; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-dim); background: var(--surface-3); }
@@ -49,54 +69,133 @@
 .permtile.tapped::before {
   content: "tapped"; position: absolute; top: 0; left: 0; right: 0; background: rgba(20, 18, 12, 0.72); color: #fff;
   font-size: 0.55rem; text-align: center; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.1rem 0; z-index: 1;
+  border-radius: 6px 6px 0 0;
 }
 .permtile.mini.tapped::before { font-size: 0.48rem; }
 .stackbadge { position: absolute; bottom: 3px; right: 3px; background: rgba(20, 18, 12, 0.75); color: #fff; font-size: 0.62rem; font-weight: 700; border-radius: 999px; padding: 0.05rem 0.35rem; font-variant-numeric: tabular-nums; z-index: 1; }
 .counterbadge { position: absolute; top: 3px; left: 3px; background: var(--accent); color: var(--accent-ink); font-size: 0.6rem; font-weight: 800; border-radius: 999px; min-width: 17px; height: 17px; padding: 0 0.25rem; display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; z-index: 1; }
-.menubtn { position: absolute; top: 2px; right: 2px; width: 15px; height: 15px; background: rgba(20, 18, 12, 0.6); color: #fff; border: none; border-radius: 4px; font-size: 0.6rem; line-height: 15px; text-align: center; z-index: 2; cursor: pointer; padding: 0; }
+.menubtn {
+  position: absolute; top: 2px; right: 2px; width: 24px; height: 24px; background: rgba(20, 18, 12, 0.68); color: #fff;
+  border: none; border-radius: 6px; font-size: 0.85rem; line-height: 24px; text-align: center; z-index: 2; cursor: pointer; padding: 0;
+}
+.permtile.mini .menubtn, .handtile.mini .menubtn { width: 18px; height: 18px; font-size: 0.7rem; line-height: 18px; }
+.play-btn {
+  position: absolute; bottom: 0; left: 0; right: 0; background: var(--accent); color: var(--accent-ink); border: none;
+  font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.18rem 0;
+  z-index: 2; cursor: pointer;
+}
+.play-btn:hover { background: var(--accent-strong); }
+.handtile.mini .play-btn { font-size: 0.52rem; padding: 0.12rem 0; }
 
 .ctx-menu {
   position: absolute; top: 20px; left: 78px; z-index: 20; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; box-shadow: 0 12px 28px -14px var(--shadow); padding: 0.35rem; width: 190px; font-size: 0.78rem;
-  display: flex; flex-direction: column; gap: 0.15rem;
+  border-radius: 10px; box-shadow: 0 12px 28px -14px var(--shadow); padding: 0.4rem; width: 210px; font-size: 0.82rem;
+  display: flex; flex-direction: column; gap: 0.1rem;
+  /* Hand cards fan out via rotation + a y-offset on .handtile (--fan-rot/--fan-y); counter-apply
+     both, in reverse order, so the menu (a child of that transformed tile) still appears upright
+     and in its normal position instead of inheriting the card's tilt/rise. */
+  transform: rotate(calc(var(--fan-rot, 0deg) * -1)) translateY(calc(var(--fan-y, 0px) * -1));
 }
-.ctx-menu .hd { padding: 0.3rem 0.5rem; color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); margin-bottom: 0.2rem; }
-.ctx-menu > button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 0.4rem 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.76rem; }
+.ctx-menu .hd { padding: 0.3rem 0.55rem; color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); margin-bottom: 0.25rem; }
+.ctx-menu > button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 0.5rem 0.55rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
 .ctx-menu > button:hover { background: var(--surface-2); }
-.counter-row, .move-row { display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; font-size: 0.74rem; flex-wrap: wrap; }
+.counter-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.55rem; font-size: 0.82rem; }
 .counter-row span:first-child { color: var(--text-dim); flex: 1; }
-.counter-row button, .move-row button { width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-size: 0.75rem; line-height: 1; }
-.move-row button { width: auto; padding: 0.15rem 0.4rem; font-size: 0.68rem; }
+.counter-row button { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-size: 0.85rem; line-height: 1; }
+.counter-row button:hover { background: var(--surface-3); }
 
 .table-main { display: grid; grid-template-columns: 1fr 240px; gap: 1.1rem; align-items: start; }
 @media (max-width: 900px) { .table-main { grid-template-columns: 1fr; } }
 
+.side-col { display: flex; flex-direction: column; gap: 0.9rem; }
+.zone-stacks { display: flex; gap: 0.7rem; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem 0.6rem; }
+.zone-stack { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
+.zone-stack.clickable .zone-stack-face { cursor: pointer; }
+.zone-stack-menu { top: calc(100% + 4px); left: 50%; transform: translateX(-50%); width: 150px; }
+.zone-stack-face {
+  width: 58px; aspect-ratio: 5 / 7; border-radius: 8px; position: relative;
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent) 55%, var(--accent-soft));
+  border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.zone-stack-face::after { content: ""; position: absolute; inset: 14%; border: 2px solid rgba(255, 255, 255, 0.35); border-radius: 50%; }
+.zone-stack-count { font-size: 1.25rem; font-weight: 800; color: var(--accent-ink); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); z-index: 1; }
+.zone-stack-label { font-size: 0.66rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.zone-stack:hover .zone-stack-face { filter: brightness(1.06); }
+.zone-stack.drag-over .zone-stack-face { transform: scale(1.08); box-shadow: 0 0 0 3px var(--accent-strong); }
+
 .board { background: var(--surface-2); border: 1px solid var(--accent); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
 .seat-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; }
 .seat-head .name { font-weight: 700; font-size: 0.9rem; }
-.life-tracker { display: flex; align-items: center; gap: 0.5rem; background: var(--surface-3); border-radius: 999px; padding: 0.25rem 0.4rem; }
+.life-tracker { display: flex; align-items: center; gap: 0.5rem; background: var(--surface-3); border-radius: 999px; padding: 0.25rem 0.4rem 0.25rem 0.7rem; }
+.life-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-weight: 700; }
 .life-tracker button { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 0.8rem; line-height: 1; }
+.life-btn.minus { background: var(--danger); border-color: var(--danger); color: #fff; }
+.life-btn.plus { background: var(--good); border-color: var(--good); color: #fff; }
+.life-btn:hover { filter: brightness(1.1); }
 .life-tracker .val { font-weight: 800; font-size: 1rem; font-variant-numeric: tabular-nums; min-width: 1.6rem; text-align: center; }
 
-.board-field { padding: 0.8rem; background: var(--surface); border: 1px dashed var(--border); border-radius: 10px; position: relative; background-size: cover; }
+.board-field { padding: 0.8rem; background: var(--surface); border: 1px dashed var(--border); border-radius: 10px; position: relative; background-size: cover; transition: box-shadow 0.12s ease, border-color 0.12s ease; }
+.board-field.drag-over { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
 
 .tray { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
 .tray .divider { width: 1px; height: 30px; background: var(--border); }
-.hand-row { display: flex; gap: 0.45rem; flex-wrap: wrap; }
-.dice-row { display: flex; gap: 0.5rem; }
+.hand-col { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 240px; }
+.hand-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.reveal-toggle { font-size: 0.72rem; padding: 0.25rem 0.6rem; }
+.hand-row { display: flex; flex-wrap: wrap; align-items: flex-end; padding: 0.7rem 0.4rem 0.15rem; }
+.hand-row .handtile {
+  transform: translateY(var(--fan-y, 0px)) rotate(var(--fan-rot, 0deg)); transform-origin: bottom center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hand-row .handtile + .handtile { margin-left: -24px; }
+.hand-row .handtile.mini + .handtile.mini { margin-left: -14px; }
+/* Each card's transform makes it its own stacking context, and at rest DOM order wins ties —
+   so a card's RIGHT portion (which the next card overlaps) is always painted over by that next
+   card. The dots button has to live on the left, in the portion nothing normally overlaps —
+   with enough inset that it clears the previous card's rotated silhouette too, not just its
+   un-rotated layout box. (Hover below avoids growing a card's footprint into a neighbor's
+   control for the same reason — only lift/shadow/z-index change, not size.) */
+.hand-row .handtile .menubtn { left: 8px; right: auto; }
+.hand-row .handtile:hover {
+  transform: translateY(calc(var(--fan-y, 0px) - 16px)) rotate(var(--fan-rot, 0deg));
+  box-shadow: 0 12px 20px -8px var(--shadow); z-index: 20;
+}
+.dice-col { display: flex; flex-direction: column; gap: 0.4rem; }
 
-.log-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem; display: flex; flex-direction: column; height: 100%; min-height: 320px; }
-.log-panel h3 { font-family: var(--font-body); font-size: 0.85rem; margin-bottom: 0.5rem; }
+.log-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem; display: flex; flex-direction: column; min-height: 260px; }
+.log-panel.collapsed { min-height: 0; }
+.log-panel h3 { font-family: var(--font-body); font-size: 0.85rem; margin: 0; }
+.log-panel-head {
+  display: flex; align-items: center; justify-content: space-between; background: none; border: none; padding: 0;
+  margin-bottom: 0.5rem; cursor: pointer; color: var(--text); width: 100%; text-align: left;
+}
+.log-panel.collapsed .log-panel-head { margin-bottom: 0; }
+.log-toggle-icon { color: var(--text-dim); font-size: 0.75rem; }
 .log-lines { display: flex; flex-direction: column; gap: 0.55rem; overflow-y: auto; flex: 1; padding-right: 0.2rem; }
 .log-line { font-size: 0.78rem; }
 .log-line .who { font-weight: 700; }
 .log-card { display: flex; align-items: center; gap: 0.3rem; margin-top: 0.25rem; font-size: 0.72rem; color: var(--text-dim); }
 .log-card img { width: 22px; border-radius: 3px; }
-.log-input { margin-top: 0.6rem; display: flex; gap: 0.4rem; }
-.log-input input { flex: 1; }
+.log-input { margin-top: 0.6rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.log-input input { flex: 1; min-width: 0; }
 
 .token-modal .field { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.6rem; }
 .token-modal .field input, .token-modal .field select { font-size: 0.85rem; }
+
+.zone-browser {
+  position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.3rem;
+  max-width: 480px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 30px 60px -20px var(--shadow);
+}
+.zone-browser-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; padding-right: 2rem; }
+.zone-browser-head h3 { font-size: 1.05rem; }
+.zone-browser-list { display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; }
+.zone-browser-row { display: flex; align-items: center; gap: 0.6rem; background: var(--surface-2); border-radius: 9px; padding: 0.4rem 0.5rem; }
+.zone-browser-thumb { width: 36px; aspect-ratio: 5 / 7; border-radius: 4px; overflow: hidden; cursor: pointer; flex-shrink: 0; background: var(--surface-3); }
+.zone-browser-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.zone-browser-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; }
+.zone-browser-actions { display: flex; gap: 0.35rem; flex-shrink: 0; }
+.zone-browser-actions .btn { font-size: 0.72rem; padding: 0.35rem 0.6rem; }
 
 .hint { color: var(--text-dim); font-size: 0.82rem; }
 .linklike { background: none; border: none; padding: 0; color: var(--accent-strong); text-decoration: underline; cursor: pointer; font-size: inherit; }

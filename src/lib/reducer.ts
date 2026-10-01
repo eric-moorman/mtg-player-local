@@ -32,6 +32,7 @@ export function createPlayer(id: string, name: string, color: string, isHost: bo
     isHost,
     connected: true,
     ready: false,
+    handRevealed: false,
     zones: { library: [], hand: [], battlefield: [], graveyard: [], exile: [], command: [] },
   };
 }
@@ -184,6 +185,10 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       if (!card) return state;
       return log(state, player.name, `reveals ${card.name} to the table.`, { name: card.name, image_small: card.image_small });
     }
+    case "setHandRevealed": {
+      const next = updatePlayer(state, action.playerId, (p) => ({ ...p, handRevealed: action.revealed }));
+      return log(next, player.name, action.revealed ? "reveals their hand to the table." : "hides their hand again.");
+    }
     case "coinFlip": {
       const result = Math.random() < 0.5 ? "heads" : "tails";
       return log(state, player.name, `flips a coin: ${result}.`);
@@ -207,9 +212,10 @@ function blankCard(c: CardInstance): CardInstance {
 
 /**
  * Battlefield, graveyard, exile and the command zone are public in Magic, so
- * they're sent to every viewer untouched. Only hand and library are hidden —
- * this replaces their contents with blanks (preserving array length, so
- * counts still render) for every player who isn't the viewer themselves.
+ * they're sent to every viewer untouched. Hand and library are hidden by
+ * default — this replaces their contents with blanks (preserving array
+ * length, so counts still render) for every player who isn't the viewer
+ * themselves, unless that player has explicitly revealed their hand.
  */
 export function redactStateFor(state: GameState, viewerId: string): GameState {
   return {
@@ -220,7 +226,7 @@ export function redactStateFor(state: GameState, viewerId: string): GameState {
         ...p,
         zones: {
           ...p.zones,
-          hand: p.zones.hand.map(blankCard),
+          hand: p.handRevealed ? p.zones.hand : p.zones.hand.map(blankCard),
           library: p.zones.library.map(blankCard),
         },
       };

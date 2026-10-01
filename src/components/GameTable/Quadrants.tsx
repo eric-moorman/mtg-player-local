@@ -24,8 +24,7 @@ export default function Quadrants({ battlefield, playerId, interactive, mini, di
       {QUADRANT_META.map(({ key, cls, label }) => {
         const stacks = grouped[key];
         return (
-          <div key={key} className={"quadrant " + cls + (stacks.length === 0 ? " empty" : "")}>
-            <div className="qlabel">{label}</div>
+          <div key={key} className={"quadrant " + cls + (stacks.length === 0 ? " empty" : "")} title={label}>
             <div className="qcards">
               {stacks.map((stack) => (
                 <PermanentTile key={stack.key} stack={stack} playerId={playerId} interactive={interactive} mini={mini} dispatch={dispatch} />

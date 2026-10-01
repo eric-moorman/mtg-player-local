@@ -5,8 +5,6 @@ import "./Inspector.css";
 
 export default function Inspector() {
   const card = useInspector((s) => s.card);
-  const printings = useInspector((s) => s.printings);
-  const printingsLoading = useInspector((s) => s.printingsLoading);
   const close = useInspector((s) => s.close);
 
   useEffect(() => {
@@ -41,22 +39,6 @@ export default function Inspector() {
               {card.keywords.map((k) => (
                 <span key={k} className="kw-chip" title={keywordTooltip(k) ?? k}>{k}</span>
               ))}
-            </div>
-          )}
-          {printingsLoading && <p className="inspect-printings-loading">Loading printings…</p>}
-          {printings && printings.length > 0 && (
-            <div className="inspect-printings">
-              <div className="inspect-printings-label">Printed in</div>
-              <ul>
-                {printings.map((p, i) => (
-                  <li key={`${p.set}-${i}`}>
-                    <span className="inspect-printing-set">{p.set_name}</span>
-                    <span className="inspect-printing-meta">
-                      {p.set} · {p.released_at.slice(0, 4)} · {p.rarity}
-                    </span>
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
         </div>

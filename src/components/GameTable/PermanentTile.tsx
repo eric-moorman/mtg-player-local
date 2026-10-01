@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { PermanentStack } from "../../lib/cardRules";
 import { primaryCounterBadge, getQuadrant } from "../../lib/cardRules";
 import { useInspector } from "../../store/useInspector";
+import { startPointerDrag, consumeSuppressedClick } from "../../lib/pointerDrag";
+import { useCloseOnOutside } from "../../lib/useCloseOnOutside";
 import type { GameAction, ZoneName } from "../../lib/types";
 
 interface Props {
@@ -21,6 +23,7 @@ const MOVE_TARGETS: { zone: ZoneName; label: string }[] = [
 
 export default function PermanentTile({ stack, playerId, mini, interactive, dispatch }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const openInspector = useInspector((s) => s.open);
   const { representative, instances } = stack;
   const targetIid = instances[0].iid;
@@ -32,16 +35,42 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
     setMenuOpen(false);
   }
 
+  const draggable = interactive && !!dispatch;
+
+  useCloseOnOutside(menuOpen, menuRef, () => setMenuOpen(false));
+
+  function openMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen(true);
+  }
+
   return (
     <div
-      className={"permtile" + (mini ? " mini" : "") + (representative.tapped ? " tapped" : "")}
-      onClick={() => openInspector(representative)}
+      className={"permtile" + (mini ? " mini" : "") + (representative.tapped ? " tapped" : "") + (menuOpen ? " menu-open" : "")}
+      onContextMenu={draggable ? openMenu : undefined}
     >
-      {representative.image_small ? (
-        <img src={representative.image_small} alt={representative.name} />
-      ) : (
-        <div className="permtile-placeholder">{representative.name.slice(0, 1).toUpperCase()}</div>
-      )}
+      <div
+        className="tile-art"
+        onClick={() => { if (consumeSuppressedClick()) return; openInspector(representative); }}
+        onMouseDown={
+          draggable
+            ? (e) =>
+                startPointerDrag(
+                  e,
+                  (zone) => { if (zone !== "battlefield") dispatch!({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: zone as ZoneName }); },
+                  () => setMenuOpen(true),
+                  representative.image_small
+                )
+            : undefined
+        }
+      >
+        {representative.image_small ? (
+          <img src={representative.image_small} alt={representative.name} draggable={false} />
+        ) : (
+          <div className="permtile-placeholder">{representative.name.slice(0, 1).toUpperCase()}</div>
+        )}
+      </div>
       {instances.length > 1 && <span className="stackbadge">×{instances.length}</span>}
       {badge && <span className="counterbadge">{badge}</span>}
 
@@ -52,14 +81,15 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
             e.stopPropagation();
             setMenuOpen((v) => !v);
           }}
-          aria-label={`Actions for ${representative.name}`}
+          aria-label={`Actions for ${representative.name} (or right-click or press-and-hold the card)`}
+          title="Actions (or right-click or press-and-hold the card)"
         >
           ⋮
         </button>
       )}
 
       {menuOpen && (
-        <div className="ctx-menu" onClick={(e) => e.stopPropagation()}>
+        <div className="ctx-menu" ref={menuRef} onClick={(e) => e.stopPropagation()}>
           <div className="hd">{representative.name}</div>
           <button onClick={() => act({ k: "tap", playerId, iid: targetIid })}>
             {representative.tapped ? "Untap" : "Tap"}
@@ -76,13 +106,11 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
               <button onClick={() => act({ k: "addCounter", playerId, iid: targetIid, label: "loyalty", delta: 1 })}>+</button>
             </div>
           )}
-          <div className="move-row">
-            {MOVE_TARGETS.map((m) => (
-              <button key={m.zone} onClick={() => act({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: m.zone })}>
-                {m.label}
-              </button>
-            ))}
-          </div>
+          {MOVE_TARGETS.map((m) => (
+            <button key={m.zone} onClick={() => act({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: m.zone })}>
+              Move to {m.label}
+            </button>
+          ))}
           <button onClick={() => act({ k: "reveal", playerId, iid: targetIid, from: "battlefield" })}>Reveal to all</button>
         </div>
       )}
