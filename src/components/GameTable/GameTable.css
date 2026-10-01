@@ -121,7 +121,20 @@ body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
 .hand-col { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 240px; }
 .hand-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .reveal-toggle { font-size: 0.72rem; padding: 0.25rem 0.6rem; }
-.hand-row { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+.hand-row { display: flex; flex-wrap: wrap; align-items: flex-end; padding: 0.7rem 0.4rem 0.15rem; }
+.hand-row .handtile {
+  transform: rotate(var(--fan-rot, 0deg)); transform-origin: bottom center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hand-row .handtile + .handtile { margin-left: -24px; }
+.hand-row .handtile.mini + .handtile.mini { margin-left: -14px; }
+.hand-row .handtile:nth-child(3n+1) { --fan-rot: -3deg; }
+.hand-row .handtile:nth-child(3n+2) { --fan-rot: 0deg; }
+.hand-row .handtile:nth-child(3n+3) { --fan-rot: 3deg; }
+.hand-row .handtile:hover {
+  transform: translateY(-16px) scale(1.08) rotate(var(--fan-rot, 0deg));
+  box-shadow: 0 12px 20px -8px var(--shadow); z-index: 20;
+}
 .dice-col { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .log-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem; display: flex; flex-direction: column; min-height: 260px; }
