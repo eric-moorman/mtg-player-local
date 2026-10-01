@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { PermanentStack } from "../../lib/cardRules";
 import { primaryCounterBadge, getQuadrant } from "../../lib/cardRules";
 import { useInspector } from "../../store/useInspector";
-import { startPointerDrag } from "../../lib/pointerDrag";
+import { startPointerDrag, consumeSuppressedClick } from "../../lib/pointerDrag";
 import type { GameAction, ZoneName } from "../../lib/types";
 
 interface Props {
@@ -48,10 +48,15 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
     >
       <div
         className="tile-art"
-        onClick={() => openInspector(representative)}
+        onClick={() => { if (consumeSuppressedClick()) return; openInspector(representative); }}
         onMouseDown={
           draggable
-            ? (e) => startPointerDrag(e, (zone) => { if (zone !== "battlefield") dispatch!({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: zone as ZoneName }); })
+            ? (e) =>
+                startPointerDrag(
+                  e,
+                  (zone) => { if (zone !== "battlefield") dispatch!({ k: "moveCard", playerId, iid: targetIid, from: "battlefield", to: zone as ZoneName }); },
+                  () => setMenuOpen(true)
+                )
             : undefined
         }
       >
@@ -71,8 +76,8 @@ export default function PermanentTile({ stack, playerId, mini, interactive, disp
             e.stopPropagation();
             setMenuOpen((v) => !v);
           }}
-          aria-label={`Actions for ${representative.name} (or right-click the card)`}
-          title="Actions (or right-click the card)"
+          aria-label={`Actions for ${representative.name} (or right-click or press-and-hold the card)`}
+          title="Actions (or right-click or press-and-hold the card)"
         >
           ⋮
         </button>

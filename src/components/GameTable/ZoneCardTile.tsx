@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useInspector } from "../../store/useInspector";
-import { startPointerDrag } from "../../lib/pointerDrag";
+import { startPointerDrag, consumeSuppressedClick } from "../../lib/pointerDrag";
 import type { CardInstance, GameAction, ZoneName } from "../../lib/types";
 
 interface Props {
@@ -40,10 +40,15 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
     <div className={"handtile" + (mini ? " mini" : "")} onContextMenu={draggable ? openMenu : undefined}>
       <div
         className="tile-art"
-        onClick={() => openInspector(card)}
+        onClick={() => { if (consumeSuppressedClick()) return; openInspector(card); }}
         onMouseDown={
           draggable
-            ? (e) => startPointerDrag(e, (zone) => { if (zone !== from) dispatch!({ k: "moveCard", playerId, iid: card.iid, from, to: zone as ZoneName }); })
+            ? (e) =>
+                startPointerDrag(
+                  e,
+                  (zone) => { if (zone !== from) dispatch!({ k: "moveCard", playerId, iid: card.iid, from, to: zone as ZoneName }); },
+                  () => setMenuOpen(true)
+                )
             : undefined
         }
       >
@@ -75,8 +80,8 @@ export default function ZoneCardTile({ card, playerId, from, interactive = true,
             e.stopPropagation();
             setMenuOpen((v) => !v);
           }}
-          aria-label={`Actions for ${card.name} (or right-click the card)`}
-          title="Actions (or right-click the card)"
+          aria-label={`Actions for ${card.name} (or right-click or press-and-hold the card)`}
+          title="Actions (or right-click or press-and-hold the card)"
         >
           ⋮
         </button>

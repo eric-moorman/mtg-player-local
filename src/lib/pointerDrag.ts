@@ -1,6 +1,7 @@
 import { useDrag } from "../store/useDrag";
 
 const THRESHOLD_PX = 6;
+const LONG_PRESS_MS = 450;
 
 /**
  * Manual mouse-based "drag" — deliberately NOT native HTML5 draggable.
@@ -14,29 +15,71 @@ const THRESHOLD_PX = 6;
  * (mousedown+mouseup with no meaningful movement) always fires the
  * element's normal `click`/`contextmenu` handlers completely untouched.
  *
+ * Also detects a long-press (hold without moving) as an alternative to
+ * right-click — two-finger-tap-to-right-click on a trackpad is a known,
+ * widely-documented cross-OS/driver inconsistency that isn't fully
+ * controllable from JS, so this gives trackpad users a reliable fallback
+ * for opening the same menu.
+ *
  * Drop targets mark themselves with `data-dropzone="<zone>"`; on mouseup,
  * whatever's under the cursor is checked for the nearest such ancestor.
  */
-export function startPointerDrag(e: { button: number; clientX: number; clientY: number }, onDrop: (zone: string) => void) {
+
+let suppressNextClick = false;
+
+/** Call at the top of a tile's onClick — returns true (and consumes the flag) if the
+ *  preceding gesture was a drag or long-press, so the caller should skip its normal click action. */
+export function consumeSuppressedClick(): boolean {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    return true;
+  }
+  return false;
+}
+
+export function startPointerDrag(
+  e: { button: number; clientX: number; clientY: number },
+  onDrop: (zone: string) => void,
+  onLongPress?: () => void
+) {
   if (e.button !== 0) return;
   const startX = e.clientX;
   const startY = e.clientY;
   let dragging = false;
+  let longPressed = false;
+
+  const timer = onLongPress
+    ? window.setTimeout(() => {
+        longPressed = true;
+        suppressNextClick = true;
+        cleanup();
+        document.body.classList.remove("kt-dragging");
+        useDrag.getState().setActive(false);
+        onLongPress();
+      }, LONG_PRESS_MS)
+    : null;
 
   function onMove(ev: MouseEvent) {
-    if (dragging) return;
+    if (dragging || longPressed) return;
     if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < THRESHOLD_PX) return;
+    if (timer != null) window.clearTimeout(timer);
     dragging = true;
+    suppressNextClick = true;
     useDrag.getState().setActive(true);
     document.body.classList.add("kt-dragging");
   }
 
-  function onUp(ev: MouseEvent) {
+  function cleanup() {
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("mouseup", onUp);
+    if (timer != null) window.clearTimeout(timer);
+  }
+
+  function onUp(ev: MouseEvent) {
+    cleanup();
     document.body.classList.remove("kt-dragging");
     useDrag.getState().setActive(false);
-    if (!dragging) return;
+    if (longPressed || !dragging) return;
     const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
     const zoneEl = el?.closest<HTMLElement>("[data-dropzone]");
     if (zoneEl?.dataset.dropzone) onDrop(zoneEl.dataset.dropzone);
