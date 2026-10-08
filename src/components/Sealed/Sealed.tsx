@@ -49,7 +49,7 @@ export default function Sealed() {
         <button className={"sealed-tab" + (activeTab === "buy" ? " active" : "")} onClick={() => setActiveTab("buy")}>
           Buy Cards
         </button>
-        <button className={"sealed-tab" + (activeTab === "build" ? " active" : "")} onClick={() => setActiveTab("build")} disabled={pool.length === 0}>
+        <button className={"sealed-tab" + (activeTab === "build" ? " active" : "")} onClick={() => setActiveTab("build")}>
           Build Deck
         </button>
       </div>

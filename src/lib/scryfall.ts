@@ -176,6 +176,8 @@ export async function searchLive(query: string): Promise<CardData[]> {
   return (data.cards ?? data.data ?? []).map(slim).filter(Boolean) as CardData[];
 }
 
+export const BASIC_LAND_NAMES = ["Plains", "Island", "Swamp", "Mountain", "Forest"] as const;
+
 export async function fetchCardByName(name: string): Promise<CardData | null> {
   const res = await politeFetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
   if (!res.ok) return null;

@@ -20,7 +20,7 @@ export default function SealedPoolList() {
           return (
             <li key={p.uid}>
               <span className="sealed-pool-name" onClick={() => openInspector(p.card)}>{p.card.name}</span>
-              <span className="sealed-pool-via">{p.via === "pack" ? "pack" : "bought"}</span>
+              <span className="sealed-pool-via">{p.via === "pack" ? "pack" : p.via === "basic" ? "free" : "bought"}</span>
               <button
                 className="mini-x"
                 onClick={() => removeFromPool(p.uid)}

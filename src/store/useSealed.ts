@@ -35,7 +35,7 @@ export type SealedTab = "packs" | "buy" | "build";
 export interface PoolCard {
   uid: string;
   card: CardData;
-  via: "pack" | "buy";
+  via: "pack" | "buy" | "basic";
   fromSet?: string;
 }
 
@@ -71,6 +71,15 @@ interface SealedStore {
   deckSelections: Record<string, number>;
   addToDeck: (name: string) => void;
   removeFromDeck: (name: string) => void;
+
+  /** Up to two card names designated as commanders — same rules as the regular Deck Builder (covers Partner pairs). */
+  commanders: string[];
+  toggleCommander: (name: string) => void;
+
+  /** Resolved CardData for basic lands added via addBasicLands, keyed by name — avoids re-fetching on repeat clicks. */
+  basicLandCache: Record<string, CardData>;
+  /** Adds `qty` copies of a basic land straight into the pool at no cost — doesn't touch budget/spent. */
+  addBasicLands: (name: string, qty: number) => Promise<void>;
 
   startSession: () => Promise<void>;
   openPack: (setCode: string) => void;
@@ -151,10 +160,40 @@ export const useSealed = create<SealedStore>((set, get) => ({
       const current = s.deckSelections[name] ?? 0;
       if (current <= 0) return {};
       const next = { ...s.deckSelections };
-      if (current <= 1) delete next[name];
-      else next[name] = current - 1;
-      return { deckSelections: next };
+      let commanders = s.commanders;
+      if (current <= 1) {
+        delete next[name];
+        commanders = commanders.filter((c) => c.toLowerCase() !== name.toLowerCase());
+      } else {
+        next[name] = current - 1;
+      }
+      return { deckSelections: next, commanders };
     }),
+
+  commanders: [],
+  toggleCommander: (name) =>
+    set((s) => {
+      if (s.commanders.some((c) => c.toLowerCase() === name.toLowerCase())) {
+        return { commanders: s.commanders.filter((c) => c.toLowerCase() !== name.toLowerCase()) };
+      }
+      if (s.commanders.length >= 2) return {};
+      return { commanders: [...s.commanders, name] };
+    }),
+
+  basicLandCache: {},
+  addBasicLands: async (name, qty) => {
+    if (qty <= 0) return;
+    let card = get().basicLandCache[name];
+    if (!card) {
+      const fetched = await scryfall.fetchCardByName(name);
+      if (!fetched) return;
+      // Free lands show $0 everywhere (pool, decklist, sell price) — no budget was ever spent on them.
+      card = { ...fetched, price_usd: 0 };
+      set((s) => ({ basicLandCache: { ...s.basicLandCache, [name]: card! } }));
+    }
+    const added: PoolCard[] = Array.from({ length: qty }, () => ({ uid: newId(), card: card!, via: "basic" }));
+    set((s) => ({ pool: [...s.pool, ...added] }));
+  },
 
   startSession: async () => {
     const { allowedSets } = get();
@@ -170,7 +209,7 @@ export const useSealed = create<SealedStore>((set, get) => ({
       for (const code of allowedSets) {
         setPools[code] = await scryfall.fetchSetCardPool(code);
       }
-      set({ setPools, phase: "active", activeTab: "packs", spent: 0, pool: [], deckSelections: {} });
+      set({ setPools, phase: "active", activeTab: "packs", spent: 0, pool: [], deckSelections: {}, commanders: [] });
     } catch {
       const name = get().availableSets.find((s) => !setPools[s.code] && allowedSets.includes(s.code))?.name;
       set({
@@ -213,19 +252,24 @@ export const useSealed = create<SealedStore>((set, get) => ({
       // Clamp the deck selection for this name in case the removed copy was one that had been chosen for the deck.
       const available = poolQtyByName(nextPool, entry.card.name);
       const deckSelections = { ...s.deckSelections };
+      let commanders = s.commanders;
       if ((deckSelections[entry.card.name] ?? 0) > available) {
-        if (available <= 0) delete deckSelections[entry.card.name];
-        else deckSelections[entry.card.name] = available;
+        if (available <= 0) {
+          delete deckSelections[entry.card.name];
+          commanders = commanders.filter((c) => c.toLowerCase() !== entry.card.name.toLowerCase());
+        } else {
+          deckSelections[entry.card.name] = available;
+        }
       }
-      return { pool: nextPool, spent: s.spent - refund, deckSelections };
+      return { pool: nextPool, spent: s.spent - refund, deckSelections, commanders };
     }),
 
   saveAsDeck: async (name) => {
-    const { deckSelections } = get();
+    const { deckSelections, commanders } = get();
     const cards: DeckCard[] = Object.entries(deckSelections)
       .filter(([, qty]) => qty > 0)
       .map(([cardName, qty]) => ({ name: cardName, qty }));
-    const deck: Deck = { id: newId(), name: name.trim() || "Sealed pool", cards, updatedAt: Date.now() };
+    const deck: Deck = { id: newId(), name: name.trim() || "Sealed pool", cards, commanders, updatedAt: Date.now() };
     await useGame.getState().saveDeck(deck);
     return deck.id;
   },
@@ -242,5 +286,6 @@ export const useSealed = create<SealedStore>((set, get) => ({
       lastOpened: null,
       loadError: null,
       deckSelections: {},
+      commanders: [],
     }),
 }));

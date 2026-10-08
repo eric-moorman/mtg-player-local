@@ -65,3 +65,8 @@
 .import-box { display: flex; flex-direction: column; gap: 0.5rem; }
 .import-box textarea { font-family: inherit; font-size: 0.82rem; background: var(--surface-3); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: var(--text); }
 .hint { color: var(--text-dim); font-size: 0.82rem; }
+
+.basic-land-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.basic-land-row input { width: 4rem; flex-shrink: 0; }
+.basic-land-buttons { display: flex; gap: 0.35rem; flex-wrap: wrap; flex: 1; }
+.basic-land-btn { flex: 1; min-width: 4.5rem; white-space: nowrap; }

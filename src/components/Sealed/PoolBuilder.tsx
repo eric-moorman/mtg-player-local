@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useSealed } from "../../store/useSealed";
 import { useInspector } from "../../store/useInspector";
 import { useGame } from "../../store/useGame";
-import { effectivePrice } from "../../lib/scryfall";
+import { effectivePrice, BASIC_LAND_NAMES } from "../../lib/scryfall";
 import type { CardData } from "../../lib/types";
 
 function formatPrice(n: number) {
@@ -14,6 +14,9 @@ export default function PoolBuilder() {
   const deckSelections = useSealed((s) => s.deckSelections);
   const addToDeck = useSealed((s) => s.addToDeck);
   const removeFromDeck = useSealed((s) => s.removeFromDeck);
+  const commanders = useSealed((s) => s.commanders);
+  const toggleCommander = useSealed((s) => s.toggleCommander);
+  const addBasicLands = useSealed((s) => s.addBasicLands);
   const setActiveTab = useSealed((s) => s.setActiveTab);
   const saveAsDeck = useSealed((s) => s.saveAsDeck);
   const reset = useSealed((s) => s.reset);
@@ -23,6 +26,14 @@ export default function PoolBuilder() {
 
   const [deckName, setDeckName] = useState("Sealed pool");
   const [saved, setSaved] = useState(false);
+  const [basicQty, setBasicQty] = useState(8);
+  const [addingBasic, setAddingBasic] = useState<string | null>(null);
+
+  async function handleAddBasic(name: string) {
+    setAddingBasic(name);
+    await addBasicLands(name, basicQty);
+    setAddingBasic(null);
+  }
 
   const poolByName = useMemo(() => {
     const map = new Map<string, { card: CardData; available: number }>();
@@ -59,6 +70,27 @@ export default function PoolBuilder() {
   return (
     <div className="db-grid sealed-build-grid">
       <div className="db-col">
+        <div className="filter-block basic-land-block">
+          <label>Add basic lands (free)</label>
+          <div className="basic-land-row">
+            <input
+              type="number" min={1} max={40} value={basicQty}
+              onChange={(e) => setBasicQty(Math.max(1, Number(e.target.value) || 1))}
+              aria-label="Quantity to add"
+            />
+            <div className="basic-land-buttons">
+              {BASIC_LAND_NAMES.map((n) => (
+                <button
+                  key={n} className="btn basic-land-btn" onClick={() => handleAddBasic(n)}
+                  disabled={addingBasic === n} title={`Add ${basicQty} ${n} to your pool, free`}
+                >
+                  {addingBasic === n ? "…" : n}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <h3 className="sealed-subhead">Your pool ({pool.length} cards)</h3>
         <div className="card-grid">
           {grouped.map(({ card, available }) => {
@@ -82,11 +114,31 @@ export default function PoolBuilder() {
         <div className="decklist">
           <input className="deck-name-input" value={deckName} onChange={(e) => setDeckName(e.target.value)} />
           <div className="count">{totalInDeck} cards</div>
+          {commanders.length > 0 ? (
+            <div className="commander-summary">
+              {commanders.length === 1 ? "Commander: " : "Commanders: "}
+              {commanders.join(" & ")}
+            </div>
+          ) : (
+            totalInDeck > 0 && (
+              <p className="hint commander-hint">Click a card's crown (♛) to set it as your commander — up to two, for Partner pairs.</p>
+            )
+          )}
           <ul>
             {Object.entries(deckSelections).filter(([, qty]) => qty > 0).sort(([a], [b]) => a.localeCompare(b)).map(([name, qty]) => {
               const found = poolByName.get(name)?.card;
+              const isCommander = commanders.some((c) => c.toLowerCase() === name.toLowerCase());
+              const commanderDisabled = !isCommander && commanders.length >= 2;
               return (
                 <li key={name}>
+                  <button
+                    className={"crown-btn" + (isCommander ? " active" : "")}
+                    onClick={() => toggleCommander(name)}
+                    disabled={commanderDisabled}
+                    title={isCommander ? "Unset as commander" : commanderDisabled ? "Only up to two commanders" : "Set as commander"}
+                  >
+                    ♛
+                  </button>
                   <span className="li-name"><span className="n">{qty}×</span> {name}</span>
                   <span className="li-meta">
                     <span className="li-cost">{found?.mana_cost ?? ""}</span>
