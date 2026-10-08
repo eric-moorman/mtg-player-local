@@ -17,6 +17,7 @@ interface Props {
 const ALL_TARGETS: { zone: ZoneName; label: string }[] = [
   { zone: "battlefield", label: "Battlefield" },
   { zone: "hand", label: "Hand" },
+  { zone: "library", label: "Library (bottom)" },
   { zone: "graveyard", label: "Graveyard" },
   { zone: "exile", label: "Exile" },
   { zone: "command", label: "Command" },

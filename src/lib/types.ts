@@ -23,6 +23,12 @@ export interface CardInstance extends CardData {
 export interface Permanent extends CardInstance {
   tapped: boolean;
   counters: Record<string, number>;
+  /** Present only while attacking: either an opponent's playerId, or `pw:<iid>` for an enemy planeswalker. */
+  attacking?: string;
+  /** Present only while blocking: the iid of the attacking permanent this one is blocking. */
+  blocking?: string;
+  /** Chosen damage-assignment order (blocker iids) when this attacker has more than one blocker — set by the attacking player. */
+  blockOrder?: string[];
 }
 
 export interface Zones {
@@ -47,6 +53,18 @@ export interface PlayerState {
   /** When true, this player's hand is shown to every viewer instead of being redacted. */
   handRevealed: boolean;
   zones: Zones;
+  /** Player-level counters (poison, energy, experience, rad, etc.) — distinct from counters on individual permanents. */
+  counters: Record<string, number>;
+  /** Commander damage taken, keyed `${fromPlayerId}:${commanderName}`. */
+  commanderDamage: Record<string, number>;
+  /** How many times each of this player's commanders has been cast from the command zone, for commander tax. Keyed by commander name. */
+  commanderCasts: Record<string, number>;
+  /** This player's designated commander names — tracked independently of the command zone's current contents, since a commander can move through other zones during a game. */
+  commanders: string[];
+  /** Mulligans taken this game, for display only (doesn't restrict anything). */
+  mulligans: number;
+  /** Achieved City's Blessing (Ascend) — once true, stays true for the rest of the game. */
+  cityBlessing: boolean;
 }
 
 export interface LogEntry {
@@ -71,6 +89,11 @@ export interface GameState {
   players: PlayerState[];
   log: LogEntry[];
   turn: TurnState;
+  /** Monarch and the Initiative are each held by exactly one player (or no one) at a time, table-wide. */
+  monarch: string | null;
+  initiative: string | null;
+  /** Day/Night is a single shared state for the whole game, not per-player. */
+  dayNight: "day" | "night" | null;
 }
 
 export interface DeckCard {
@@ -136,7 +159,19 @@ export type GameAction =
   | { k: "diceRoll"; playerId: string; sides: number }
   | { k: "nextPhase" }
   | { k: "passTurn" }
-  | { k: "setActivePlayer"; playerId: string };
+  | { k: "setActivePlayer"; playerId: string }
+  | { k: "untapAll"; playerId: string }
+  | { k: "mulligan"; playerId: string }
+  | { k: "setPlayerCounter"; playerId: string; label: string; delta: number }
+  | { k: "setCommanderDamage"; toPlayerId: string; fromPlayerId: string; commanderName: string; delta: number }
+  | { k: "declareAttacker"; playerId: string; iid: string; target: string | null }
+  | { k: "declareBlocker"; playerId: string; iid: string; attackerIid: string | null }
+  | { k: "setBlockOrder"; playerId: string; attackerIid: string; order: string[] }
+  | { k: "clearCombat" }
+  | { k: "setMonarch"; playerId: string | null }
+  | { k: "setInitiative"; playerId: string | null }
+  | { k: "setCityBlessing"; playerId: string; achieved: boolean }
+  | { k: "setDayNight"; value: "day" | "night" | null };
 
 export type ClientToHost =
   | { t: "join"; name: string; color: string }

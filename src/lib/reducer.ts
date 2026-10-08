@@ -34,11 +34,26 @@ export function createPlayer(id: string, name: string, color: string, isHost: bo
     ready: false,
     handRevealed: false,
     zones: { library: [], hand: [], battlefield: [], graveyard: [], exile: [], command: [] },
+    counters: {},
+    commanderDamage: {},
+    commanderCasts: {},
+    commanders: [],
+    mulligans: 0,
+    cityBlessing: false,
   };
 }
 
 export function createInitialState(): GameState {
-  return { startingLife: 20, started: false, players: [], log: [], turn: { activePlayerId: null, phase: PHASES[0] } };
+  return {
+    startingLife: 20,
+    started: false,
+    players: [],
+    log: [],
+    turn: { activePlayerId: null, phase: PHASES[0] },
+    monarch: null,
+    initiative: null,
+    dayNight: null,
+  };
 }
 
 function updatePlayer(state: GameState, playerId: string, fn: (p: PlayerState) => PlayerState): GameState {
@@ -59,6 +74,7 @@ function playerName(state: GameState, id: string | null): string {
 export function setPlayerDeck(state: GameState, playerId: string, library: CardData[], commanders: CardData[]): GameState {
   return updatePlayer(state, playerId, (p) => ({
     ...p,
+    commanders: commanders.map((c) => c.name),
     zones: { ...p.zones, library: shuffle(library.map(toInstance)), command: commanders.map(toInstance) },
   }));
 }
@@ -82,23 +98,74 @@ function findZoneArray(p: PlayerState, zone: ZoneName): CardInstance[] {
   return p.zones[zone] as CardInstance[];
 }
 
+/** Strips attacking/blocking/blockOrder from every permanent, for everyone — combat is over. */
+function clearCombatState(state: GameState): GameState {
+  return {
+    ...state,
+    players: state.players.map((p) => ({
+      ...p,
+      zones: {
+        ...p.zones,
+        battlefield: p.zones.battlefield.map((perm) => {
+          if (!perm.attacking && !perm.blocking && !perm.blockOrder) return perm;
+          const { attacking, blocking, blockOrder, ...rest } = perm;
+          return rest as Permanent;
+        }),
+      },
+    })),
+  };
+}
+
 export function applyAction(state: GameState, action: GameAction): GameState {
   switch (action.k) {
     case "nextPhase": {
       const idx = PHASES.indexOf(state.turn.phase);
+      const leavingCombat = state.turn.phase === "Combat";
+      const base = leavingCombat ? clearCombatState(state) : state;
       if (idx === PHASES.length - 1) {
-        const nextId = nextPlayerId(state, state.turn.activePlayerId);
-        return log({ ...state, turn: { activePlayerId: nextId, phase: PHASES[0] } }, "Table", `${playerName(state, nextId)}'s turn begins.`);
+        const nextId = nextPlayerId(base, base.turn.activePlayerId);
+        return log({ ...base, turn: { activePlayerId: nextId, phase: PHASES[0] } }, "Table", `${playerName(base, nextId)}'s turn begins.`);
       }
-      return { ...state, turn: { ...state.turn, phase: PHASES[idx + 1] } };
+      return { ...base, turn: { ...base.turn, phase: PHASES[idx + 1] } };
     }
     case "passTurn": {
-      const nextId = nextPlayerId(state, state.turn.activePlayerId);
-      return log({ ...state, turn: { activePlayerId: nextId, phase: PHASES[0] } }, "Table", `${playerName(state, nextId)}'s turn begins.`);
+      const base = clearCombatState(state);
+      const nextId = nextPlayerId(base, base.turn.activePlayerId);
+      return log({ ...base, turn: { activePlayerId: nextId, phase: PHASES[0] } }, "Table", `${playerName(base, nextId)}'s turn begins.`);
     }
     case "setActivePlayer": {
       if (!state.players.some((p) => p.id === action.playerId)) return state;
-      return { ...state, turn: { activePlayerId: action.playerId, phase: PHASES[0] } };
+      return { ...clearCombatState(state), turn: { activePlayerId: action.playerId, phase: PHASES[0] } };
+    }
+    case "clearCombat": {
+      return clearCombatState(state);
+    }
+    case "setMonarch": {
+      return log(
+        { ...state, monarch: action.playerId },
+        "Table",
+        action.playerId ? `${playerName(state, action.playerId)} becomes the monarch.` : "The monarchy is vacant."
+      );
+    }
+    case "setInitiative": {
+      return log(
+        { ...state, initiative: action.playerId },
+        "Table",
+        action.playerId ? `${playerName(state, action.playerId)} takes the initiative.` : "No one has the initiative."
+      );
+    }
+    case "setDayNight": {
+      return log({ ...state, dayNight: action.value }, "Table", action.value ? `It becomes ${action.value}.` : "Day/Night is cleared.");
+    }
+    case "setCommanderDamage": {
+      const key = `${action.fromPlayerId}:${action.commanderName}`;
+      return updatePlayer(state, action.toPlayerId, (p) => {
+        const nextVal = Math.max(0, (p.commanderDamage[key] ?? 0) + action.delta);
+        const commanderDamage = { ...p.commanderDamage };
+        if (nextVal === 0) delete commanderDamage[key];
+        else commanderDamage[key] = nextVal;
+        return { ...p, commanderDamage };
+      });
     }
   }
 
@@ -137,11 +204,16 @@ export function applyAction(state: GameState, action: GameAction): GameState {
           const startingLoyalty = "loyalty" in card && card.loyalty ? parseInt(card.loyalty, 10) : undefined;
           movedCard = { ...card, tapped: false, counters: startingLoyalty ? { loyalty: startingLoyalty } : {} } as Permanent;
         } else {
-          const { tapped, counters, ...rest } = card as Permanent;
+          const { tapped, counters, attacking, blocking, blockOrder, ...rest } = card as Permanent;
           movedCard = rest as CardInstance;
         }
         const nextDest = [...destArr, movedCard];
-        return { ...p, zones: { ...p.zones, [action.from]: nextSrc, [action.to]: nextDest } };
+        // Commander tax: cast from the command zone straight onto the battlefield.
+        const commanderCasts =
+          action.from === "command" && action.to === "battlefield" && p.commanders.includes(card.name)
+            ? { ...p.commanderCasts, [card.name]: (p.commanderCasts[card.name] ?? 0) + 1 }
+            : p.commanderCasts;
+        return { ...p, commanderCasts, zones: { ...p.zones, [action.from]: nextSrc, [action.to]: nextDest } };
       });
     }
     case "tap": {
@@ -196,6 +268,82 @@ export function applyAction(state: GameState, action: GameAction): GameState {
     case "diceRoll": {
       const result = 1 + Math.floor(Math.random() * action.sides);
       return log(state, player.name, `rolls a d${action.sides}: ${result}.`);
+    }
+    case "untapAll": {
+      const next = updatePlayer(state, action.playerId, (p) => ({
+        ...p,
+        zones: { ...p.zones, battlefield: p.zones.battlefield.map((perm) => ({ ...perm, tapped: false })) },
+      }));
+      return log(next, player.name, "untaps everything.");
+    }
+    case "mulligan": {
+      const next = updatePlayer(state, action.playerId, (p) => {
+        const library = shuffle([...p.zones.library, ...p.zones.hand]);
+        const drawCount = Math.min(7, library.length);
+        return {
+          ...p,
+          mulligans: p.mulligans + 1,
+          zones: { ...p.zones, hand: library.slice(0, drawCount), library: library.slice(drawCount) },
+        };
+      });
+      return log(next, player.name, `mulligans (${player.mulligans + 1}).`);
+    }
+    case "setPlayerCounter": {
+      return updatePlayer(state, action.playerId, (p) => {
+        const nextVal = Math.max(0, (p.counters[action.label] ?? 0) + action.delta);
+        const counters = { ...p.counters };
+        if (nextVal === 0) delete counters[action.label];
+        else counters[action.label] = nextVal;
+        return { ...p, counters };
+      });
+    }
+    case "declareAttacker": {
+      return updatePlayer(state, action.playerId, (p) => ({
+        ...p,
+        zones: {
+          ...p.zones,
+          battlefield: p.zones.battlefield.map((perm) =>
+            perm.iid !== action.iid
+              ? perm
+              : action.target
+              ? { ...perm, attacking: action.target, tapped: true }
+              : (() => {
+                  const { attacking, blockOrder, ...rest } = perm;
+                  return rest as Permanent;
+                })()
+          ),
+        },
+      }));
+    }
+    case "declareBlocker": {
+      return updatePlayer(state, action.playerId, (p) => ({
+        ...p,
+        zones: {
+          ...p.zones,
+          battlefield: p.zones.battlefield.map((perm) =>
+            perm.iid !== action.iid
+              ? perm
+              : action.attackerIid
+              ? { ...perm, blocking: action.attackerIid }
+              : (() => {
+                  const { blocking, ...rest } = perm;
+                  return rest as Permanent;
+                })()
+          ),
+        },
+      }));
+    }
+    case "setBlockOrder": {
+      return updatePlayer(state, action.playerId, (p) => ({
+        ...p,
+        zones: {
+          ...p.zones,
+          battlefield: p.zones.battlefield.map((perm) => (perm.iid === action.attackerIid ? { ...perm, blockOrder: action.order } : perm)),
+        },
+      }));
+    }
+    case "setCityBlessing": {
+      return updatePlayer(state, action.playerId, (p) => ({ ...p, cityBlessing: action.achieved }));
     }
     default:
       return state;

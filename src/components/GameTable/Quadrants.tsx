@@ -1,5 +1,5 @@
 import { groupByQuadrant } from "../../lib/cardRules";
-import PermanentTile from "./PermanentTile";
+import PermanentTile, { type CombatContext } from "./PermanentTile";
 import type { GameAction, Permanent } from "../../lib/types";
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   interactive: boolean;
   mini?: boolean;
   dispatch?: (a: GameAction) => void;
+  combat?: CombatContext;
 }
 
 const QUADRANT_META = [
@@ -17,7 +18,7 @@ const QUADRANT_META = [
   { key: "other" as const, cls: "q-other", label: "Artifacts & other" },
 ];
 
-export default function Quadrants({ battlefield, playerId, interactive, mini, dispatch }: Props) {
+export default function Quadrants({ battlefield, playerId, interactive, mini, dispatch, combat }: Props) {
   const grouped = groupByQuadrant(battlefield);
   return (
     <div className="quadrants">
@@ -27,7 +28,7 @@ export default function Quadrants({ battlefield, playerId, interactive, mini, di
           <div key={key} className={"quadrant " + cls + (stacks.length === 0 ? " empty" : "")} title={label}>
             <div className="qcards">
               {stacks.map((stack) => (
-                <PermanentTile key={stack.key} stack={stack} playerId={playerId} interactive={interactive} mini={mini} dispatch={dispatch} />
+                <PermanentTile key={stack.key} stack={stack} playerId={playerId} interactive={interactive} mini={mini} dispatch={dispatch} combat={combat} />
               ))}
             </div>
           </div>
