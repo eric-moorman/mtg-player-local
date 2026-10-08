@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useSealed } from "../../store/useSealed";
 import { useInspector } from "../../store/useInspector";
 import { useGame } from "../../store/useGame";
-import { effectivePrice, BASIC_LAND_NAMES } from "../../lib/scryfall";
+import { effectivePrice, BASIC_LAND_NAMES, BASIC_LAND_MANA } from "../../lib/scryfall";
 import type { CardData } from "../../lib/types";
 
 function formatPrice(n: number) {
@@ -70,27 +70,6 @@ export default function PoolBuilder() {
   return (
     <div className="db-grid sealed-build-grid">
       <div className="db-col">
-        <div className="filter-block basic-land-block">
-          <label>Add basic lands (free)</label>
-          <div className="basic-land-row">
-            <input
-              type="number" min={1} max={40} value={basicQty}
-              onChange={(e) => setBasicQty(Math.max(1, Number(e.target.value) || 1))}
-              aria-label="Quantity to add"
-            />
-            <div className="basic-land-buttons">
-              {BASIC_LAND_NAMES.map((n) => (
-                <button
-                  key={n} className="btn basic-land-btn" onClick={() => handleAddBasic(n)}
-                  disabled={addingBasic === n} title={`Add ${basicQty} ${n} to your pool, free`}
-                >
-                  {addingBasic === n ? "…" : n}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
         <h3 className="sealed-subhead">Your pool ({pool.length} cards)</h3>
         <div className="card-grid">
           {grouped.map(({ card, available }) => {
@@ -111,6 +90,31 @@ export default function PoolBuilder() {
       </div>
 
       <div className="db-col">
+        <div className="filter-block">
+          <label>Add basic lands (free)</label>
+          <div className="basic-land-row">
+            <input
+              type="number" min={1} max={40} value={basicQty}
+              onChange={(e) => setBasicQty(Math.max(1, Number(e.target.value) || 1))}
+              aria-label="Quantity to add"
+            />
+            <div className="pips">
+              {BASIC_LAND_NAMES.map((n) => (
+                <button
+                  key={n}
+                  className="pip"
+                  style={{ background: `var(--mana-${BASIC_LAND_MANA[n]})`, color: `var(--mana-${BASIC_LAND_MANA[n]}-ink)` }}
+                  onClick={() => handleAddBasic(n)}
+                  disabled={addingBasic === n}
+                  title={`Add ${basicQty} ${n} to your pool, free`}
+                >
+                  {addingBasic === n ? "…" : BASIC_LAND_MANA[n].toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="decklist">
           <input className="deck-name-input" value={deckName} onChange={(e) => setDeckName(e.target.value)} />
           <div className="count">{totalInDeck} cards</div>

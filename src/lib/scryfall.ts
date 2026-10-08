@@ -178,6 +178,15 @@ export async function searchLive(query: string): Promise<CardData[]> {
 
 export const BASIC_LAND_NAMES = ["Plains", "Island", "Swamp", "Mountain", "Forest"] as const;
 
+/** Mana-color key (matches the --mana-<key> CSS custom properties) for each basic land name. */
+export const BASIC_LAND_MANA: Record<(typeof BASIC_LAND_NAMES)[number], string> = {
+  Plains: "w",
+  Island: "u",
+  Swamp: "b",
+  Mountain: "r",
+  Forest: "g",
+};
+
 export async function fetchCardByName(name: string): Promise<CardData | null> {
   const res = await politeFetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
   if (!res.ok) return null;

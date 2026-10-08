@@ -1,20 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "../store/useGame";
 import { useInspector } from "../store/useInspector";
-import { parseDecklistText, searchLive, serializeDecklist, fetchCardByName, BASIC_LAND_NAMES } from "../lib/scryfall";
+import { parseDecklistText, searchLive, serializeDecklist, fetchCardByName, BASIC_LAND_NAMES, BASIC_LAND_MANA } from "../lib/scryfall";
 import { newId } from "../lib/reducer";
 import type { CardData, Deck, DeckCard } from "../lib/types";
 import "./DeckBuilder.css";
 
 const COLOR_KEYS = ["W", "U", "B", "R", "G", "C"] as const;
-
-const BASIC_LAND_MANA: Record<(typeof BASIC_LAND_NAMES)[number], string> = {
-  Plains: "w",
-  Island: "u",
-  Swamp: "b",
-  Mountain: "r",
-  Forest: "g",
-};
 
 function formatBytes(n?: number) {
   if (!n) return "";
@@ -248,30 +240,6 @@ export default function DeckBuilder() {
             <input type="text" placeholder="Card name…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <div className="filter-block">
-            <label>Add basic lands</label>
-            <div className="basic-land-row">
-              <input
-                type="number" min={1} max={40} value={basicQty}
-                onChange={(e) => setBasicQty(Math.max(1, Number(e.target.value) || 1))}
-                aria-label="Quantity to add"
-              />
-              <div className="pips">
-                {BASIC_LAND_NAMES.map((n) => (
-                  <button
-                    key={n}
-                    className="pip"
-                    style={{ background: `var(--mana-${BASIC_LAND_MANA[n]})`, color: `var(--mana-${BASIC_LAND_MANA[n]}-ink)` }}
-                    onClick={() => handleAddBasic(n)}
-                    disabled={addingBasic === n}
-                    title={`Add ${basicQty} ${n}`}
-                  >
-                    {addingBasic === n ? "…" : BASIC_LAND_MANA[n].toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="filter-block">
             <label>Color</label>
             <div className="pips">
               {COLOR_KEYS.map((c) => (
@@ -369,6 +337,31 @@ export default function DeckBuilder() {
         </div>
 
         <div className="db-col">
+          <div className="filter-block">
+            <label>Add basic lands</label>
+            <div className="basic-land-row">
+              <input
+                type="number" min={1} max={40} value={basicQty}
+                onChange={(e) => setBasicQty(Math.max(1, Number(e.target.value) || 1))}
+                aria-label="Quantity to add"
+              />
+              <div className="pips">
+                {BASIC_LAND_NAMES.map((n) => (
+                  <button
+                    key={n}
+                    className="pip"
+                    style={{ background: `var(--mana-${BASIC_LAND_MANA[n]})`, color: `var(--mana-${BASIC_LAND_MANA[n]}-ink)` }}
+                    onClick={() => handleAddBasic(n)}
+                    disabled={addingBasic === n}
+                    title={`Add ${basicQty} ${n}`}
+                  >
+                    {addingBasic === n ? "…" : BASIC_LAND_MANA[n].toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="decklist" data-tour="db-decklist">
             <input className="deck-name-input" value={deckName} onChange={(e) => setDeckName(e.target.value)} />
             <div className="count">
