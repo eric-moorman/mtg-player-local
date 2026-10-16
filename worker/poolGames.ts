@@ -34,6 +34,8 @@ const MAX_MEMBERS = 8;
 const MAX_NAME_LENGTH = 60;
 const MAX_PROGRESS_BYTES = 1_500_000;
 const MAX_INVITES_PER_REQUEST = 8;
+/** Comfortably above the number of booster-style sets Scryfall lists, so "select all" is never silently truncated. */
+const MAX_ALLOWED_SETS = 1000;
 
 interface Member {
   userId: string;
@@ -172,6 +174,7 @@ function sanitizeSettings(input: any): GameSettings | null {
   if (!Number.isFinite(cardsPerPack) || cardsPerPack < 1 || cardsPerPack > 60) return null;
   if (!Number.isFinite(packPrice) || packPrice < 0) return null;
   if (!Array.isArray(allowedSets) || allowedSets.length === 0) return null;
+  if (allowedSets.length > MAX_ALLOWED_SETS) return null;
   if (!allowedSets.every((c: unknown) => typeof c === "string" && c.length > 0 && c.length <= 16)) return null;
   if (typeof weights !== "object" || weights === null) return null;
   const rarityWeights: Record<string, number> = {};
@@ -180,7 +183,7 @@ function sanitizeSettings(input: any): GameSettings | null {
     if (!Number.isFinite(value) || value < 0) return null;
     rarityWeights[key] = value;
   }
-  return { budget, cardsPerPack, packPrice, rarityWeights, allowedSets: allowedSets.slice(0, 200) };
+  return { budget, cardsPerPack, packPrice, rarityWeights, allowedSets };
 }
 
 /**

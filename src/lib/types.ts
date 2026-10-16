@@ -11,6 +11,8 @@ export interface CardData {
   toughness?: string;
   loyalty?: string;
   rarity?: string;
+  /** Set code of this particular printing. Absent on older cached records, so always treat it as optional. */
+  set?: string;
   price_usd: number | null;
   image_small?: string;
   image_large?: string;

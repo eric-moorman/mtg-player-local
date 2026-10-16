@@ -37,7 +37,7 @@ export default function Sealed() {
     return (
       <section>
         <div className="screen-head"><h2>Sealed Pool</h2></div>
-        <p className="hint">Loading card pools for this game's sets…</p>
+        <p className="hint">Opening your pool game…</p>
       </section>
     );
   }

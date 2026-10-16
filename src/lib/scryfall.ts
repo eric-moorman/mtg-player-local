@@ -75,6 +75,7 @@ function slim(raw: any): CardData | null {
     toughness: raw.toughness,
     loyalty: raw.loyalty,
     rarity: raw.rarity,
+    set: raw.set,
     price_usd: raw.prices?.usd ? parseFloat(raw.prices.usd) : raw.prices?.usd_foil ? parseFloat(raw.prices.usd_foil) : null,
     image_small: imgs.small,
     image_large: imgs.large,
@@ -268,6 +269,81 @@ export function effectivePrice(card: CardData): number {
  * different data source than the big oracle_cards catalog, which is one
  * representative printing per card and not organized by set at all.
  */
+export interface SaleSearchFilters {
+  name?: string;
+  /** Colors to match as a union — a card passes if it has any of them ("C" meaning colorless). */
+  colors?: string[];
+  type?: string;
+  cmcMin?: number | null;
+  cmcMax?: number | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  keyword?: string;
+}
+
+/**
+ * Past this many sets the `(e:a or e:b or ...)` clause would blow out the URL,
+ * so the set restriction moves client-side instead. Worth noting the trade-off:
+ * server-side scoping is exact, while the client-side pass can only filter what
+ * one page of results happened to contain.
+ */
+const MAX_SETS_IN_QUERY = 25;
+
+function buildSaleQuery(filters: SaleSearchFilters, allowedSets: string[]): string | null {
+  const parts: string[] = [];
+  const name = filters.name?.trim();
+  if (name) parts.push(name);
+  if (filters.colors?.length) {
+    parts.push(`(${filters.colors.map((c) => (c === "C" ? "c:c" : `c:${c.toLowerCase()}`)).join(" or ")})`);
+  }
+  const type = filters.type?.trim();
+  if (type) parts.push(`t:${JSON.stringify(type)}`);
+  const keyword = filters.keyword?.trim();
+  if (keyword) parts.push(`keyword:${JSON.stringify(keyword)}`);
+  if (filters.cmcMin != null) parts.push(`cmc>=${filters.cmcMin}`);
+  if (filters.cmcMax != null) parts.push(`cmc<=${filters.cmcMax}`);
+  if (filters.priceMin != null) parts.push(`usd>=${filters.priceMin}`);
+  if (filters.priceMax != null) parts.push(`usd<=${filters.priceMax}`);
+  // Nothing to go on would ask Scryfall for the entire corpus, so make the caller show a prompt instead.
+  if (parts.length === 0) return null;
+
+  if (allowedSets.length > 0 && allowedSets.length <= MAX_SETS_IN_QUERY) {
+    parts.push(`(${allowedSets.map((code) => `e:${code}`).join(" or ")})`);
+  }
+  // Same shape as a set's pack pool: real paper printings at the four standard rarities.
+  parts.push("-is:digital", "-r:special", "-r:bonus");
+  return parts.join(" ");
+}
+
+/**
+ * Live card search for the Buy tab, scoped to a pool game's allowed sets.
+ *
+ * Deliberately mirrors how the Deck Builder searches rather than scanning a
+ * preloaded corpus: a game may allow hundreds of sets, and downloading all of
+ * them up front costs minutes before anything is usable. `unique=prints` is
+ * the right mode here because the thing being bought is a specific printing at
+ * a specific price, and the same card in two allowed sets is two real choices.
+ */
+export async function searchPurchasable(filters: SaleSearchFilters, allowedSets: string[], limit = 90): Promise<CardData[]> {
+  const query = buildSaleQuery(filters, allowedSets);
+  if (!query) return [];
+  const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=name`;
+  const res = await politeFetch(url);
+  // A search matching nothing is a 404 from Scryfall, which is a normal empty result, not a failure.
+  if (!res.ok) return [];
+  const data = await res.json();
+  const allowed = allowedSets.length > MAX_SETS_IN_QUERY ? new Set(allowedSets) : null;
+  const out: CardData[] = [];
+  for (const raw of data.data ?? []) {
+    if (!RARITIES.includes(raw.rarity)) continue;
+    if (allowed && !allowed.has(raw.set)) continue;
+    const card = slim(raw);
+    if (card) out.push(card);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 export async function fetchSetCardPool(setCode: string): Promise<CardData[]> {
   const cached = await loadSetPool(setCode);
   if (cached) return cached;
