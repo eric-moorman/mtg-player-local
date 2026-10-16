@@ -34,6 +34,10 @@ const MAX_MEMBERS = 8;
 const MAX_NAME_LENGTH = 60;
 const MAX_PROGRESS_BYTES = 1_500_000;
 const MAX_INVITES_PER_REQUEST = 8;
+/** Comfortably above the number of booster-style sets Scryfall lists, so "select all" is never silently truncated. */
+const MAX_ALLOWED_SETS = 1000;
+/** Mirrors DEFAULT_SELL_BACK_RATE in src/lib/scryfall.ts. */
+const DEFAULT_SELL_BACK_RATE = 0.5;
 
 interface Member {
   userId: string;
@@ -51,6 +55,8 @@ interface GameSettings {
   packPrice: number;
   rarityWeights: Record<string, number>;
   allowedSets: string[];
+  /** Fraction of market price refunded on a sell-back, 0-1. */
+  sellBackRate: number;
 }
 
 interface GameMeta {
@@ -172,6 +178,7 @@ function sanitizeSettings(input: any): GameSettings | null {
   if (!Number.isFinite(cardsPerPack) || cardsPerPack < 1 || cardsPerPack > 60) return null;
   if (!Number.isFinite(packPrice) || packPrice < 0) return null;
   if (!Array.isArray(allowedSets) || allowedSets.length === 0) return null;
+  if (allowedSets.length > MAX_ALLOWED_SETS) return null;
   if (!allowedSets.every((c: unknown) => typeof c === "string" && c.length > 0 && c.length <= 16)) return null;
   if (typeof weights !== "object" || weights === null) return null;
   const rarityWeights: Record<string, number> = {};
@@ -180,7 +187,11 @@ function sanitizeSettings(input: any): GameSettings | null {
     if (!Number.isFinite(value) || value < 0) return null;
     rarityWeights[key] = value;
   }
-  return { budget, cardsPerPack, packPrice, rarityWeights, allowedSets: allowedSets.slice(0, 200) };
+  // Absent on clients that predate the setting; clamped rather than rejected so an
+  // out-of-range value degrades to the default instead of failing the whole creation.
+  const rawRate = Number(input.sellBackRate);
+  const sellBackRate = Number.isFinite(rawRate) ? Math.min(1, Math.max(0, rawRate)) : DEFAULT_SELL_BACK_RATE;
+  return { budget, cardsPerPack, packPrice, rarityWeights, allowedSets, sellBackRate };
 }
 
 /**

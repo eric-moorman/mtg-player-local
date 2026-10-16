@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSealed } from "../../store/useSealed";
 import { useInspector } from "../../store/useInspector";
-import { effectivePrice } from "../../lib/scryfall";
+import { effectivePrice, searchPurchasable } from "../../lib/scryfall";
 import SealedPoolList from "./SealedPoolList";
 import type { CardData } from "../../lib/types";
 
@@ -11,11 +11,15 @@ function formatPrice(n: number) {
   return `$${n.toFixed(2)}`;
 }
 
+function numOrNull(value: string): number | null {
+  return value.trim() === "" ? null : Number(value);
+}
+
 export default function SealedBuy() {
   const rules = useSealed((s) => s.rules);
   const spent = useSealed((s) => s.spent);
-  const setPools = useSealed((s) => s.setPools);
   const buyCard = useSealed((s) => s.buyCard);
+  const availableSets = useSealed((s) => s.availableSets);
   const openInspector = useInspector((s) => s.open);
 
   const [query, setQuery] = useState("");
@@ -27,41 +31,71 @@ export default function SealedBuy() {
   const [priceMax, setPriceMax] = useState("");
   const [keywordFilter, setKeywordFilter] = useState("");
 
-  const allowedSets = rules?.allowedSets ?? [];
-  const remaining = (rules?.budget ?? 0) - spent;
+  const [results, setResults] = useState<CardData[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  const allCards = useMemo(() => {
-    const out: { card: CardData; setCode: string }[] = [];
-    for (const code of allowedSets) for (const card of setPools[code] ?? []) out.push({ card, setCode: code });
-    return out;
-  }, [rules, setPools]);
+  const allowedSets = useMemo(() => rules?.allowedSets ?? [], [rules]);
+  const remaining = (rules?.budget ?? 0) - spent;
+  const setNames = useMemo(() => new Map(availableSets.map((s) => [s.code, s.name])), [availableSets]);
+
+  const hasCriteria =
+    query.trim() !== "" ||
+    colors.length > 0 ||
+    typeFilter.trim() !== "" ||
+    keywordFilter.trim() !== "" ||
+    cmcMin.trim() !== "" ||
+    cmcMax.trim() !== "" ||
+    priceMin.trim() !== "" ||
+    priceMax.trim() !== "";
+
+  /**
+   * Searches Scryfall live rather than scanning preloaded set pools: a game can
+   * allow hundreds of sets, and downloading them all just to filter locally is
+   * what used to make opening a game take minutes. Same debounce the Deck
+   * Builder uses for its live search.
+   */
+  useEffect(() => {
+    if (!hasCriteria) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      searchPurchasable(
+        {
+          name: query,
+          colors,
+          type: typeFilter,
+          keyword: keywordFilter,
+          cmcMin: numOrNull(cmcMin),
+          cmcMax: numOrNull(cmcMax),
+          priceMin: numOrNull(priceMin),
+          priceMax: numOrNull(priceMax),
+        },
+        allowedSets,
+      )
+        .then((cards) => {
+          if (cancelled) return;
+          setResults(cards);
+          setSearching(false);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setResults([]);
+          setSearching(false);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [hasCriteria, query, colors, typeFilter, keywordFilter, cmcMin, cmcMax, priceMin, priceMax, allowedSets]);
 
   function toggleColor(c: string) {
     setColors((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   }
-
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const kw = keywordFilter.trim().toLowerCase();
-    const cmcLo = cmcMin.trim() === "" ? null : Number(cmcMin);
-    const cmcHi = cmcMax.trim() === "" ? null : Number(cmcMax);
-    const priceLo = priceMin.trim() === "" ? null : Number(priceMin);
-    const priceHi = priceMax.trim() === "" ? null : Number(priceMax);
-    return allCards
-      .filter(({ card: c }) => {
-        if (q && !c.name.toLowerCase().includes(q)) return false;
-        if (colors.length && !colors.some((col) => (col === "C" ? c.colors.length === 0 : c.colors.includes(col)))) return false;
-        if (typeFilter && !c.type_line.toLowerCase().includes(typeFilter.toLowerCase())) return false;
-        if (cmcLo != null && c.cmc < cmcLo) return false;
-        if (cmcHi != null && c.cmc > cmcHi) return false;
-        const price = effectivePrice(c);
-        if (priceLo != null && price < priceLo) return false;
-        if (priceHi != null && price > priceHi) return false;
-        if (kw && !c.keywords.some((k) => k.toLowerCase().includes(kw))) return false;
-        return true;
-      })
-      .slice(0, 90);
-  }, [allCards, query, colors, typeFilter, cmcMin, cmcMax, priceMin, priceMax, keywordFilter]);
 
   return (
     <div className="db-grid sealed-buy-tab-grid">
@@ -113,15 +147,21 @@ export default function SealedBuy() {
 
       <div className="db-col">
         <div className="card-grid">
-          {results.map(({ card, setCode }) => {
+          {results.map((card) => {
             const price = effectivePrice(card);
             const isEstimated = card.price_usd == null;
+            const setCode = card.set ?? "";
             return (
               <div className="cardtile" key={card.id} onClick={() => openInspector(card)}>
                 {card.image_small && <img src={card.image_small} alt={card.name} />}
                 <span className="price-badge" title={isEstimated ? "No Scryfall market price — estimated by rarity" : "Market price, via Scryfall"}>
                   {isEstimated ? "~" : ""}{formatPrice(price)}
                 </span>
+                {setCode && (
+                  <span className="sealed-buy-set" title={setNames.get(setCode) ?? setCode.toUpperCase()}>
+                    {setCode.toUpperCase()}
+                  </span>
+                )}
                 <button
                   className="sealed-buy-btn"
                   onClick={(e) => {
@@ -135,7 +175,11 @@ export default function SealedBuy() {
               </div>
             );
           })}
-          {results.length === 0 && <p className="hint">No cards match those filters in your allowed sets.</p>}
+          {!hasCriteria && <p className="hint">Search by name, or use the filters, to find cards to buy from this game's sets.</p>}
+          {hasCriteria && searching && <p className="hint">Searching Scryfall…</p>}
+          {hasCriteria && !searching && results.length === 0 && (
+            <p className="hint">No cards match those filters in this game's sets.</p>
+          )}
         </div>
       </div>
 

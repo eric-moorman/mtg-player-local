@@ -48,7 +48,12 @@ function isSignedIn(): boolean {
 }
 
 const DEFAULT_WEIGHTS: RarityWeights = { common: 60, uncommon: 25, rare: 12, mythic: 3 };
-const DEFAULT_CONFIG: SealedConfig = { cardsPerPack: 14, packPrice: 6, rarityWeights: DEFAULT_WEIGHTS };
+const DEFAULT_CONFIG: SealedConfig = {
+  cardsPerPack: 14,
+  packPrice: 6,
+  rarityWeights: DEFAULT_WEIGHTS,
+  sellBackRate: scryfall.DEFAULT_SELL_BACK_RATE,
+};
 
 function loadConfig(): SealedConfig {
   try {
@@ -114,7 +119,11 @@ interface SealedStore {
   /** Frozen rules of the loaded game — the only thing the active session should read numbers from. */
   rules: PoolGameSettings | null;
   players: PoolGamePlayerSummary[];
+  /** Lazily filled, one set at a time, as packs get opened — never preloaded for every allowed set. */
   setPools: Record<string, CardData[]>;
+  loadingSets: Record<string, boolean>;
+  /** Surfaced next to the pack buttons; a failed pack never charges the budget. */
+  packError: string | null;
   loadError: string | null;
   saveState: SaveState;
 
@@ -134,7 +143,7 @@ interface SealedStore {
   basicLandCache: Record<string, CardData>;
   addBasicLands: (name: string, qty: number) => Promise<void>;
 
-  openPack: (setCode: string) => void;
+  openPack: (setCode: string) => Promise<void>;
   dismissReveal: () => void;
   buyCard: (card: CardData, setCode: string) => void;
   removeFromPool: (uid: string) => void;
@@ -201,15 +210,19 @@ export const useSealed = create<SealedStore>((set, get) => {
   }
 
   /**
-   * Pulls the card pools for a game's sets so packs can be opened and the Buy tab
-   * can be searched. Needed on resume as well as on first load, since the pools are
-   * big and derived — they're refetched rather than stored with the game.
+   * Opens a game straight to the table. Card pools are deliberately NOT fetched here:
+   * a game may allow hundreds of sets, and pulling every one up front (each itself
+   * paginated) took minutes with nothing on screen. A set's pool is fetched the first
+   * time a pack from it is opened, and the Buy tab searches Scryfall live, so the cost
+   * is proportional to what the player actually touches.
    */
-  async function loadGameIntoSession(detail: PoolGameDetail): Promise<void> {
+  function loadGameIntoSession(detail: PoolGameDetail): void {
     const { meta, progress, players } = detail;
     set({
-      view: "loading",
+      view: "active",
+      activeTab: progress.finished ? "build" : "packs",
       loadError: null,
+      packError: null,
       game: meta,
       rules: meta.settings,
       players,
@@ -222,28 +235,8 @@ export const useSealed = create<SealedStore>((set, get) => {
       lastOpened: null,
       saveState: "idle",
     });
-
-    const setPools: Record<string, CardData[]> = {};
-    try {
-      // Sequential, not Promise.all: keeps every request properly spaced through
-      // politeFetch's queue and means a failure is attributable to one specific set.
-      for (const code of meta.settings.allowedSets) {
-        setPools[code] = await scryfall.fetchSetCardPool(code);
-      }
-    } catch {
-      const missing = meta.settings.allowedSets.find((code) => !setPools[code]);
-      const name = get().availableSets.find((s) => s.code === missing)?.name ?? missing?.toUpperCase();
-      set({
-        view: "list",
-        game: null,
-        rules: null,
-        loadError: name
-          ? `Couldn't load "${name}" from Scryfall. Your game is safe — try opening it again.`
-          : "Couldn't load one of this game's sets from Scryfall. Your game is safe — try opening it again.",
-      });
-      return;
-    }
-    set({ setPools, view: "active", activeTab: progress.finished ? "build" : "packs" });
+    // Only for displaying set names next to the pack buttons — one cheap, cached request.
+    void get().loadAvailableSets();
   }
 
   return {
@@ -269,7 +262,8 @@ export const useSealed = create<SealedStore>((set, get) => {
     loadRemoteConfig: async () => {
       if (isSignedIn()) {
         const data = await cloud.getSync();
-        if (data?.sealedConfig) set({ config: data.sealedConfig });
+        // Merged over defaults, not assigned: an account synced before sell-back existed has no rate stored.
+        if (data?.sealedConfig) set({ config: { ...DEFAULT_CONFIG, ...data.sealedConfig } });
       } else {
         set({ config: loadConfig() });
       }
@@ -294,7 +288,7 @@ export const useSealed = create<SealedStore>((set, get) => {
       set({ view: "loading", loadError: null });
       try {
         const detail = await api.getGame(gameId);
-        await loadGameIntoSession(detail);
+        loadGameIntoSession(detail);
       } catch (e: any) {
         set({ view: "list", loadError: e?.message ?? "Couldn't open that pool game." });
         void get().refreshGames();
@@ -330,6 +324,7 @@ export const useSealed = create<SealedStore>((set, get) => {
         cardsPerPack: config.cardsPerPack,
         packPrice: config.packPrice,
         rarityWeights: config.rarityWeights,
+        sellBackRate: config.sellBackRate,
         allowedSets,
       };
       const invites = draftInvites
@@ -346,7 +341,7 @@ export const useSealed = create<SealedStore>((set, get) => {
         set({ view: "setup", loadError: e?.message ?? "Couldn't create that pool game." });
         return;
       }
-      await loadGameIntoSession(detail);
+      loadGameIntoSession(detail);
       void get().refreshGames();
     },
 
@@ -368,6 +363,8 @@ export const useSealed = create<SealedStore>((set, get) => {
     rules: null,
     players: [],
     setPools: {},
+    loadingSets: {},
+    packError: null,
     loadError: null,
     saveState: "idle",
 
@@ -431,18 +428,47 @@ export const useSealed = create<SealedStore>((set, get) => {
       queueSave();
     },
 
-    openPack: (setCode) => {
-      const { rules, spent, setPools, pool } = get();
-      if (!rules) return;
+    openPack: async (setCode) => {
+      const { rules, setPools, loadingSets } = get();
+      if (!rules || loadingSets[setCode]) return;
+      if (rules.budget - get().spent < rules.packPrice) return;
+
+      // First pack from this set pulls its card list; fetchSetCardPool caches to
+      // IndexedDB, so every later pack from the same set is instant and offline.
+      let setPool = setPools[setCode];
+      if (!setPool) {
+        set((s) => ({ loadingSets: { ...s.loadingSets, [setCode]: true }, packError: null }));
+        try {
+          setPool = await scryfall.fetchSetCardPool(setCode);
+        } catch {
+          const name = get().availableSets.find((s) => s.code === setCode)?.name ?? setCode.toUpperCase();
+          set((s) => ({
+            loadingSets: { ...s.loadingSets, [setCode]: false },
+            packError: `Couldn't load ${name} from Scryfall — nothing was charged. Try again, or pick a different set.`,
+          }));
+          return;
+        }
+        set((s) => ({ setPools: { ...s.setPools, [setCode]: setPool! }, loadingSets: { ...s.loadingSets, [setCode]: false } }));
+      }
+
+      if (setPool.length === 0) {
+        const name = get().availableSets.find((s) => s.code === setCode)?.name ?? setCode.toUpperCase();
+        set({ packError: `${name} has no openable cards on Scryfall — nothing was charged. Try a different set.` });
+        return;
+      }
+
+      // Re-read spend rather than reusing the pre-fetch value: the player may have
+      // bought or sold something while the set was downloading.
+      const { spent, pool } = get();
       if (rules.budget - spent < rules.packPrice) return;
-      const setPool = setPools[setCode];
-      if (!setPool || setPool.length === 0) return;
+
       const opened = scryfall.openPack(setPool, rules.cardsPerPack, rules.rarityWeights);
       const newPoolCards: PoolCardRecord[] = opened.map((card) => ({ uid: newId(), card, via: "pack", fromSet: setCode }));
       set({
         spent: spent + rules.packPrice,
         pool: [...pool, ...newPoolCards],
         lastOpened: { setCode, cards: opened },
+        packError: null,
       });
       queueSave();
     },
@@ -461,10 +487,12 @@ export const useSealed = create<SealedStore>((set, get) => {
       const s = get();
       const entry = s.pool.find((p) => p.uid === uid);
       if (!entry) return;
-      // Pack-sourced cards can be sold back too, same as bought ones — both refund at the
-      // price stored on the card when it was acquired, so a later Scryfall price move can't
-      // silently change what a sale is worth mid-game.
-      const refund = scryfall.effectivePrice(entry.card);
+      // Pack-sourced cards can be sold back too, same as bought ones — both refund a
+      // fraction of the price stored on the card when it was acquired, so a later Scryfall
+      // price move can't silently change what a sale is worth mid-game. The fraction is the
+      // game's sell-back rate: without that spread, opening packs and liquidating them is a
+      // reliable profit and the budget stops constraining anything.
+      const refund = scryfall.sellValue(entry.card, scryfall.sellBackRate(s.rules));
       const nextPool = s.pool.filter((p) => p.uid !== uid);
       // Clamp the deck selection for this name in case the removed copy was one chosen for the deck.
       const available = poolQtyByName(nextPool, entry.card.name);
@@ -517,6 +545,8 @@ export const useSealed = create<SealedStore>((set, get) => {
         rules: null,
         players: [],
         setPools: {},
+        loadingSets: {},
+        packError: null,
         spent: 0,
         pool: [],
         deckSelections: {},

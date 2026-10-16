@@ -11,6 +11,8 @@ export interface CardData {
   toughness?: string;
   loyalty?: string;
   rarity?: string;
+  /** Set code of this particular printing. Absent on older cached records, so always treat it as optional. */
+  set?: string;
   price_usd: number | null;
   image_small?: string;
   image_large?: string;
@@ -140,6 +142,8 @@ export interface SealedConfig {
   cardsPerPack: number;
   packPrice: number;
   rarityWeights: RarityWeights;
+  /** Fraction of market price refunded when selling a card back, 0-1. See DEFAULT_SELL_BACK_RATE. */
+  sellBackRate: number;
 }
 
 // ---- Network protocol ----
@@ -197,6 +201,12 @@ export interface PoolGameSettings {
   packPrice: number;
   rarityWeights: RarityWeights;
   allowedSets: string[];
+  /**
+   * Fraction of market price refunded when selling a card back, 0-1. Optional because
+   * games created before sell-back existed have no value stored — read it through
+   * sellBackRate() in scryfall.ts rather than directly, so those games get the default.
+   */
+  sellBackRate?: number;
 }
 
 export interface PoolGameMember {
