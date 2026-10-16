@@ -1,0 +1,104 @@
+.deckinspect-overlay {
+  position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center; padding: 1.2rem; z-index: 110;
+}
+
+.deckinspect {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: 0 30px 60px -20px var(--shadow);
+  width: 100%; max-width: 1280px; height: 100%; max-height: 92vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+.deckinspect-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.deckinspect-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.15rem; }
+.deckinspect-sub { font-size: 0.78rem; color: var(--text-dim); }
+
+.deckinspect-body { display: grid; grid-template-columns: 1fr 300px; gap: 0; flex: 1; min-height: 0; }
+
+.deckinspect-board { overflow-y: auto; padding: 1rem 1.1rem 2rem; display: flex; flex-direction: column; gap: 1.4rem; }
+
+.deckinspect-section h4 {
+  margin: 0 0 0.5rem; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--text-dim); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem;
+}
+.deckinspect-count { color: var(--text); font-weight: 700; }
+
+.deckinspect-columns { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-start; }
+.deckinspect-column { display: flex; flex-direction: column; gap: 0.25rem; width: 122px; }
+.deckinspect-cmc {
+  font-size: 0.66rem; color: var(--text-dim); font-variant-numeric: tabular-nums;
+  background: var(--surface-2); border-radius: 999px; padding: 0.05rem 0.4rem; align-self: flex-start;
+}
+
+.deckinspect-stack { position: relative; width: 122px; }
+.deckinspect-cardslot {
+  position: absolute; left: 0; width: 122px; height: 170px;
+  padding: 0; border: 1px solid var(--border); border-radius: 7px; overflow: hidden;
+  background: var(--surface-3); cursor: pointer; display: block; text-align: left;
+  box-shadow: 0 2px 5px -2px var(--shadow);
+}
+.deckinspect-cardslot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.deckinspect-cardslot:hover,
+.deckinspect-cardslot:focus-visible { z-index: 5; outline: 2px solid var(--accent); outline-offset: -2px; }
+/* Lifting the hovered card clear of the one stacked on top of it is the whole point of the layout. */
+.deckinspect-cardslot:hover { transform: translateY(-6px); }
+.deckinspect-cardslot.pinned { outline: 2px solid var(--accent-strong); outline-offset: -2px; z-index: 4; }
+
+.deckinspect-cardname {
+  position: absolute; top: 0; left: 0; right: 0;
+  background: linear-gradient(to bottom, rgba(16, 14, 10, 0.88), rgba(16, 14, 10, 0.55) 70%, transparent);
+  color: #fff; font-size: 0.6rem; line-height: 1.2; padding: 0.25rem 0.35rem 0.5rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.deckinspect-noart {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+  font-size: 0.66rem; padding: 0.4rem; text-align: center; color: var(--text-dim);
+}
+.deckinspect-noart.big { aspect-ratio: 5/7; font-size: 0.9rem; background: var(--surface-2); border-radius: 9px; }
+
+.deckinspect-side {
+  border-left: 1px solid var(--border); background: var(--surface-2);
+  overflow-y: auto; padding: 0.9rem; display: flex; flex-direction: column; gap: 1rem;
+}
+.deckinspect-preview img { width: 100%; border-radius: 9px; display: block; }
+.deckinspect-previewmeta { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.5rem; font-size: 0.78rem; }
+.deckinspect-previewmeta span { color: var(--text-dim); }
+.deckinspect-previewmeta p { margin: 0.2rem 0 0; white-space: pre-wrap; font-size: 0.75rem; line-height: 1.45; }
+.deckinspect-previewprice { font-variant-numeric: tabular-nums; }
+
+.deckinspect-stats h4 {
+  margin: 0 0 0.4rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim);
+}
+.deckinspect-stats h4 + * { margin-top: 0; }
+.deckinspect-stats > h4:not(:first-child) { margin-top: 1rem; }
+
+/* Mana curve: one series, one hue, no y-axis — the count above each bar carries the value. */
+.curve { display: flex; align-items: flex-end; gap: 0.3rem; height: 110px; }
+.curve-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 0.15rem; }
+.curve-n { font-size: 0.66rem; color: var(--text-dim); font-variant-numeric: tabular-nums; min-height: 0.9em; }
+.curve-bar {
+  width: 100%; min-height: 2px; background: var(--accent);
+  border-radius: 4px 4px 0 0; /* rounded data-end, square against the baseline */
+}
+.curve-x { font-size: 0.64rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.curve-note { margin: 0.35rem 0 0; font-size: 0.68rem; }
+
+.deckinspect-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.deckinspect-bars li { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; }
+.deckinspect-bars .b-label { width: 84px; flex-shrink: 0; color: var(--text-dim); }
+.deckinspect-bars .b-track { flex: 1; height: 8px; background: var(--surface-3); border-radius: 999px; overflow: hidden; }
+.deckinspect-bars .b-fill { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.deckinspect-bars .b-n { width: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; }
+
+.deckinspect-colors { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.deckinspect-color { display: flex; align-items: center; gap: 0.25rem; }
+.deckinspect-colorn { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .deckinspect-body { grid-template-columns: 1fr; }
+  .deckinspect-side { border-left: none; border-top: 1px solid var(--border); }
+}

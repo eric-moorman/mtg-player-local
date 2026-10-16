@@ -188,6 +188,33 @@ export const BASIC_LAND_MANA: Record<(typeof BASIC_LAND_NAMES)[number], string> 
   Forest: "g",
 };
 
+/**
+ * Resolves many card names in as few requests as possible, via Scryfall's
+ * collection endpoint (75 identifiers per POST). Used when a decklist that was
+ * saved or imported as plain names needs real card data — looking those up one
+ * at a time would be dozens of round trips through the rate-limit queue.
+ * Names Scryfall doesn't recognize are simply absent from the result.
+ */
+export async function fetchCardsByNames(names: string[]): Promise<Map<string, CardData>> {
+  const out = new Map<string, CardData>();
+  const unique = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+  for (let i = 0; i < unique.length; i += 75) {
+    const batch = unique.slice(i, i + 75);
+    const res = await politeFetch("https://api.scryfall.com/cards/collection", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifiers: batch.map((name) => ({ name })) }),
+    });
+    if (!res.ok) continue;
+    const data = await res.json();
+    for (const raw of data.data ?? []) {
+      const card = slim(raw);
+      if (card) out.set(card.name.toLowerCase(), card);
+    }
+  }
+  return out;
+}
+
 export async function fetchCardByName(name: string): Promise<CardData | null> {
   const res = await politeFetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
   if (!res.ok) return null;
