@@ -3,6 +3,8 @@ import { useSealed } from "../../store/useSealed";
 import { useInspector } from "../../store/useInspector";
 import { useGame } from "../../store/useGame";
 import { effectivePrice, BASIC_LAND_NAMES, BASIC_LAND_MANA } from "../../lib/scryfall";
+import DeckInspect from "../DeckInspect";
+import type { DeckEntry } from "../../lib/deckStats";
 import type { CardData } from "../../lib/types";
 
 function formatPrice(n: number) {
@@ -30,6 +32,7 @@ export default function PoolBuilder() {
   const [deckName, setDeckName] = useState(() => game?.name ?? "Sealed pool");
   const [finishing, setFinishing] = useState(false);
   const [confirmFinish, setConfirmFinish] = useState(false);
+  const [inspecting, setInspecting] = useState(false);
   const [basicQty, setBasicQty] = useState(8);
   const [addingBasic, setAddingBasic] = useState<string | null>(null);
 
@@ -51,6 +54,16 @@ export default function PoolBuilder() {
 
   const grouped = useMemo(() => Array.from(poolByName.values()).sort((a, b) => a.card.name.localeCompare(b.card.name)), [poolByName]);
   const totalInDeck = Object.values(deckSelections).reduce((sum, n) => sum + n, 0);
+
+  // Every chosen name is by definition in the pool, so each resolves to real card data.
+  const inspectEntries: DeckEntry[] = useMemo(
+    () =>
+      Object.entries(deckSelections)
+        .filter(([, qty]) => qty > 0)
+        .map(([name, qty]) => ({ card: poolByName.get(name)?.card, qty }))
+        .filter((e): e is DeckEntry => e.card != null),
+    [deckSelections, poolByName],
+  );
 
   async function handleFinish() {
     setFinishing(true);
@@ -181,6 +194,14 @@ export default function PoolBuilder() {
           ) : (
             <div className="actions">
               <button className="btn" onClick={() => setActiveTab("packs")}>← Open Packs / Buy</button>
+              <button
+                className="btn"
+                onClick={() => setInspecting(true)}
+                disabled={totalInDeck === 0}
+                title={totalInDeck === 0 ? "Add some cards first" : "See the whole deck laid out by type and mana value"}
+              >
+                Inspect deck
+              </button>
               <button className="btn primary" onClick={() => setConfirmFinish(true)} disabled={totalInDeck === 0}>
                 Finish & save deck
               </button>
@@ -188,6 +209,10 @@ export default function PoolBuilder() {
           )}
         </div>
       </div>
+
+      {inspecting && (
+        <DeckInspect name={deckName} entries={inspectEntries} commanders={commanders} onClose={() => setInspecting(false)} />
+      )}
     </div>
   );
 }

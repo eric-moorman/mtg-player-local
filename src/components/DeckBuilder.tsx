@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "../store/useGame";
 import { useInspector } from "../store/useInspector";
-import { parseDecklistText, searchLive, serializeDecklist, fetchCardByName, BASIC_LAND_NAMES, BASIC_LAND_MANA } from "../lib/scryfall";
+import { parseDecklistText, searchLive, serializeDecklist, fetchCardByName, fetchCardsByNames, BASIC_LAND_NAMES, BASIC_LAND_MANA } from "../lib/scryfall";
+import DeckInspect from "./DeckInspect";
+import type { DeckEntry } from "../lib/deckStats";
 import { newId } from "../lib/reducer";
 import type { CardData, Deck, DeckCard } from "../lib/types";
 import "./DeckBuilder.css";
@@ -57,6 +59,8 @@ export default function DeckBuilder() {
   const [commanders, setCommanders] = useState<string[]>([]);
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");
+  const [inspecting, setInspecting] = useState(false);
+  const [resolvingDeck, setResolvingDeck] = useState(false);
   const [basicQty, setBasicQty] = useState(8);
   const [addingBasic, setAddingBasic] = useState<string | null>(null);
 
@@ -109,6 +113,43 @@ export default function DeckBuilder() {
       })
       .slice(0, 90);
   }, [hasCatalog, catalog, liveResults, query, colors, typeFilter, cmcMin, cmcMax, priceMin, priceMax, keywordFilter]);
+
+  const inspectEntries: DeckEntry[] = useMemo(
+    () =>
+      deckCards
+        .map((dc) => ({ card: cardIndex.get(dc.name.toLowerCase()), qty: dc.qty }))
+        .filter((e): e is DeckEntry => e.card != null),
+    [deckCards, cardIndex],
+  );
+  const unresolvedNames = useMemo(
+    () => deckCards.filter((dc) => !cardIndex.has(dc.name.toLowerCase())).map((dc) => dc.name),
+    [deckCards, cardIndex],
+  );
+
+  /**
+   * A deck loaded from storage or pasted in as text is just names — the card data
+   * behind them was never fetched. Resolve it in one batched request before showing
+   * the inspector, rather than rendering a mostly-empty deck.
+   */
+  async function openInspect() {
+    if (unresolvedNames.length > 0) {
+      setResolvingDeck(true);
+      try {
+        const found = await fetchCardsByNames(unresolvedNames);
+        if (found.size > 0) {
+          setCardIndex((prev) => {
+            const next = new Map(prev);
+            for (const [key, card] of found) next.set(key, card);
+            return next;
+          });
+        }
+      } catch {
+        // Fall through and inspect whatever did resolve; the hint explains the gap.
+      }
+      setResolvingDeck(false);
+    }
+    setInspecting(true);
+  }
 
   const total = deckCards.reduce((sum, c) => sum + c.qty, 0);
   const { price: deckPrice, hasUnknown: deckHasUnknownPrice } = deckTotal(deckCards, cardIndex);
@@ -412,9 +453,18 @@ export default function DeckBuilder() {
             </ul>
             <div className="actions">
               <button className="btn primary" onClick={handleSave}>Save deck</button>
+              <button
+                className="btn"
+                onClick={openInspect}
+                disabled={deckCards.length === 0 || resolvingDeck}
+                title={deckCards.length === 0 ? "Add some cards first" : "See the whole deck laid out by type and mana value"}
+              >
+                {resolvingDeck ? "Loading cards…" : "Inspect deck"}
+              </button>
               <button className="btn" onClick={() => setShowImport((v) => !v)}>Import list</button>
               <button className="btn" onClick={handleExport}>Export list</button>
             </div>
+
             {showImport && (
               <div className="import-box">
                 <textarea
@@ -429,6 +479,10 @@ export default function DeckBuilder() {
           </div>
         </div>
       </div>
+
+      {inspecting && (
+        <DeckInspect name={deckName} entries={inspectEntries} commanders={commanders} onClose={() => setInspecting(false)} />
+      )}
     </section>
   );
 }
