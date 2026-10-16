@@ -264,6 +264,26 @@ export function effectivePrice(card: CardData): number {
 }
 
 /**
+ * Cards sell back for a fraction of market price — the buy/sell spread every card
+ * shop runs on. Without it a pack is a money printer: a $6 pack of a normal modern
+ * set holds ~$7-10 of singles, so opening and immediately liquidating turns a
+ * reliable profit and the budget stops being a constraint at all. At 50% the same
+ * pack returns ~$3.50-5.00, so churning is always a loss and the budget binds again.
+ */
+export const DEFAULT_SELL_BACK_RATE = 0.5;
+
+/** Reads a game's sell-back rate, defaulting for games created before the setting existed. */
+export function sellBackRate(settings: { sellBackRate?: number } | null | undefined): number {
+  const rate = settings?.sellBackRate;
+  return typeof rate === "number" && rate >= 0 && rate <= 1 ? rate : DEFAULT_SELL_BACK_RATE;
+}
+
+/** What selling this card actually pays, rounded to whole cents so the budget never drifts. */
+export function sellValue(card: CardData, rate: number): number {
+  return Math.round(effectivePrice(card) * rate * 100) / 100;
+}
+
+/**
  * Every card in a set (nonfoil pool, standard rarities only), paginated
  * through Scryfall's search and cached in IndexedDB — this is deliberately a
  * different data source than the big oracle_cards catalog, which is one

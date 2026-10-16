@@ -48,7 +48,12 @@ function isSignedIn(): boolean {
 }
 
 const DEFAULT_WEIGHTS: RarityWeights = { common: 60, uncommon: 25, rare: 12, mythic: 3 };
-const DEFAULT_CONFIG: SealedConfig = { cardsPerPack: 14, packPrice: 6, rarityWeights: DEFAULT_WEIGHTS };
+const DEFAULT_CONFIG: SealedConfig = {
+  cardsPerPack: 14,
+  packPrice: 6,
+  rarityWeights: DEFAULT_WEIGHTS,
+  sellBackRate: scryfall.DEFAULT_SELL_BACK_RATE,
+};
 
 function loadConfig(): SealedConfig {
   try {
@@ -257,7 +262,8 @@ export const useSealed = create<SealedStore>((set, get) => {
     loadRemoteConfig: async () => {
       if (isSignedIn()) {
         const data = await cloud.getSync();
-        if (data?.sealedConfig) set({ config: data.sealedConfig });
+        // Merged over defaults, not assigned: an account synced before sell-back existed has no rate stored.
+        if (data?.sealedConfig) set({ config: { ...DEFAULT_CONFIG, ...data.sealedConfig } });
       } else {
         set({ config: loadConfig() });
       }
@@ -318,6 +324,7 @@ export const useSealed = create<SealedStore>((set, get) => {
         cardsPerPack: config.cardsPerPack,
         packPrice: config.packPrice,
         rarityWeights: config.rarityWeights,
+        sellBackRate: config.sellBackRate,
         allowedSets,
       };
       const invites = draftInvites
@@ -480,10 +487,12 @@ export const useSealed = create<SealedStore>((set, get) => {
       const s = get();
       const entry = s.pool.find((p) => p.uid === uid);
       if (!entry) return;
-      // Pack-sourced cards can be sold back too, same as bought ones — both refund at the
-      // price stored on the card when it was acquired, so a later Scryfall price move can't
-      // silently change what a sale is worth mid-game.
-      const refund = scryfall.effectivePrice(entry.card);
+      // Pack-sourced cards can be sold back too, same as bought ones — both refund a
+      // fraction of the price stored on the card when it was acquired, so a later Scryfall
+      // price move can't silently change what a sale is worth mid-game. The fraction is the
+      // game's sell-back rate: without that spread, opening packs and liquidating them is a
+      // reliable profit and the budget stops constraining anything.
+      const refund = scryfall.sellValue(entry.card, scryfall.sellBackRate(s.rules));
       const nextPool = s.pool.filter((p) => p.uid !== uid);
       // Clamp the deck selection for this name in case the removed copy was one chosen for the deck.
       const available = poolQtyByName(nextPool, entry.card.name);
