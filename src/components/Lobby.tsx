@@ -60,14 +60,14 @@ export default function Lobby() {
         </div>
 
         <div className="lobby-grid">
-          <div className="lobby-card">
+          <div className="lobby-card" data-tour="lobby-create">
             <h3>Create a game</h3>
             <p>Start a table and share the code with friends. You'll act as host.</p>
             <button className="btn primary" disabled={busy !== null} onClick={handleHost}>
               {busy === "host" ? "Starting…" : "Create game"}
             </button>
           </div>
-          <div className="lobby-card">
+          <div className="lobby-card" data-tour="lobby-join">
             <h3>Join a game</h3>
             <p>Enter the code a friend sent you to connect directly to their table.</p>
             <input

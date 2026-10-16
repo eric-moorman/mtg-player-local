@@ -7,14 +7,15 @@ function formatPrice(n: number) {
 }
 
 export default function SealedPacks() {
-  const budget = useSealed((s) => s.budget);
+  const rules = useSealed((s) => s.rules);
   const spent = useSealed((s) => s.spent);
-  const config = useSealed((s) => s.config);
-  const allowedSets = useSealed((s) => s.allowedSets);
   const availableSets = useSealed((s) => s.availableSets);
   const openPack = useSealed((s) => s.openPack);
 
-  const remaining = budget - spent;
+  if (!rules) return null;
+
+  const remaining = rules.budget - spent;
+  const canAfford = remaining >= rules.packPrice;
   const setNames = new Map(availableSets.map((s) => [s.code, s.name]));
 
   return (
@@ -22,17 +23,22 @@ export default function SealedPacks() {
       <div className="sealed-session-grid">
         <div className="sealed-session-col">
           <h3 className="sealed-subhead">Open a pack</h3>
+          {!canAfford && (
+            <p className="hint">
+              Not enough left for another {formatPrice(rules.packPrice)} pack — sell something back, or head to Build Deck.
+            </p>
+          )}
           <div className="sealed-pack-buttons">
-            {allowedSets.map((code) => (
+            {rules.allowedSets.map((code) => (
               <button
                 key={code}
                 className="btn sealed-pack-btn"
                 onClick={() => openPack(code)}
-                disabled={remaining < config.packPrice}
+                disabled={!canAfford}
                 title={setNames.get(code)}
               >
                 {setNames.get(code) ?? code.toUpperCase()}
-                <span className="sealed-pack-price">{formatPrice(config.packPrice)}</span>
+                <span className="sealed-pack-price">{formatPrice(rules.packPrice)}</span>
               </button>
             ))}
           </div>

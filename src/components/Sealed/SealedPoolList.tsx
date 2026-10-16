@@ -9,6 +9,7 @@ function formatPrice(n: number) {
 export default function SealedPoolList() {
   const pool = useSealed((s) => s.pool);
   const removeFromPool = useSealed((s) => s.removeFromPool);
+  const finished = useSealed((s) => s.finished);
   const openInspector = useInspector((s) => s.open);
 
   return (
@@ -20,15 +21,17 @@ export default function SealedPoolList() {
           return (
             <li key={p.uid}>
               <span className="sealed-pool-name" onClick={() => openInspector(p.card)}>{p.card.name}</span>
-              <span className="sealed-pool-via">{p.via === "pack" ? "pack" : "bought"}</span>
-              <button
-                className="mini-x"
-                onClick={() => removeFromPool(p.uid)}
-                title={`Sell for ${formatPrice(sellPrice)}`}
-                aria-label={`Sell ${p.card.name} for ${formatPrice(sellPrice)}`}
-              >
-                ×
-              </button>
+              <span className="sealed-pool-via">{p.via === "pack" ? "pack" : p.via === "basic" ? "free" : "bought"}</span>
+              {!finished && (
+                <button
+                  className="mini-x"
+                  onClick={() => removeFromPool(p.uid)}
+                  title={`Sell for ${formatPrice(sellPrice)}`}
+                  aria-label={`Sell ${p.card.name} for ${formatPrice(sellPrice)}`}
+                >
+                  ×
+                </button>
+              )}
             </li>
           );
         })}

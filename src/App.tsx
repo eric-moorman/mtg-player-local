@@ -9,6 +9,7 @@ import GameTable from "./components/GameTable/GameTable";
 import Settings from "./components/Settings";
 import Inspector from "./components/Inspector";
 import Sidebar from "./components/Sidebar";
+import TourOverlay from "./components/Tour/TourOverlay";
 
 export default function App() {
   const screen = useGame((s) => s.screen);
@@ -49,6 +50,7 @@ export default function App() {
       </div>
 
       <Inspector />
+      <TourOverlay />
     </div>
   );
 }

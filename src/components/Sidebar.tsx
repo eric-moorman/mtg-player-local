@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useGame, type Screen } from "../store/useGame";
 import { useAuth } from "../store/useAuth";
-import { IconChevron, IconDeck, IconFlag, IconLobby, IconPack, IconSettings, IconTable, IconUser } from "./icons";
+import { useTour } from "../store/useTour";
+import { IconChevron, IconCompass, IconDeck, IconFlag, IconLobby, IconPack, IconSettings, IconTable, IconUser } from "./icons";
 import ReportModal from "./ReportModal";
 
 const NAV: { id: Screen; label: string; icon: (props: { size?: number }) => JSX.Element }[] = [
@@ -19,6 +20,7 @@ export default function Sidebar() {
   const setScreen = useGame((s) => s.setScreen);
   const matchActive = useGame((s) => s.gameState?.started ?? false);
   const user = useAuth((s) => s.user);
+  const startTour = useTour((s) => s.start);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(STORAGE_KEY) === "1");
   const [reportOpen, setReportOpen] = useState(false);
   const items = NAV.filter((r) => r.id !== "table" || matchActive);
@@ -60,6 +62,16 @@ export default function Sidebar() {
         >
           <span className="sidebar-icon"><IconUser /></span>
           <span className="sidebar-label">{user ? `Signed in: ${user.username}` : "Not signed in"}</span>
+        </button>
+
+        <button
+          className="sidebar-btn sidebar-tour"
+          data-tour="nav-tour-button"
+          onClick={startTour}
+          title={collapsed ? "Take a tour" : undefined}
+        >
+          <span className="sidebar-icon"><IconCompass /></span>
+          <span className="sidebar-label">Take a tour</span>
         </button>
 
         <button className="sidebar-btn sidebar-report" onClick={() => setReportOpen(true)} title={collapsed ? "Report a bug / request a feature" : undefined}>

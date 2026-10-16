@@ -19,12 +19,69 @@
 
 .opp-strip { display: flex; gap: 0.9rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1.1rem; }
 .opp { flex: 0 0 auto; width: 250px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; }
-.opp-head { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; font-weight: 700; }
-.life-pill { background: var(--surface-3); border-radius: 999px; padding: 0.1rem 0.55rem; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.78rem; }
+.opp-head { display: flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; font-weight: 700; }
+.opp-head .name, .opp-head > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.life-pill { background: var(--surface-3); border-radius: 999px; padding: 0.1rem 0.55rem; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.78rem; margin-left: auto; flex-shrink: 0; }
 .tray-pills { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
 .zone-chip { background: var(--surface-3); border: none; border-radius: 999px; padding: 0.15rem 0.5rem; font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .zone-chip.clickable { cursor: pointer; }
 .zone-chip b { color: var(--text); font-weight: 700; }
+
+/* Table-wide shared status: Monarch, Initiative, Day/Night, combat reset. */
+.status-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.status-pill { position: relative; }
+.status-pill-btn {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 0.35rem 0.8rem;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--text);
+}
+.status-pill-btn:hover { background: var(--surface-3); }
+.status-pill-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 12px 28px -14px var(--shadow); padding: 0.3rem; min-width: 150px; display: flex; flex-direction: column; gap: 0.1rem;
+}
+.status-pill-menu button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 0.4rem 0.55rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
+.status-pill-menu button:hover { background: var(--surface-2); }
+.status-pill-menu button.active { color: var(--accent-strong); font-weight: 700; }
+
+/* City's Blessing badge — per-player, independent of everyone else's. */
+.blessing-badge { background: none; border: 1px solid transparent; border-radius: 999px; padding: 0.1rem 0.3rem; font-size: 0.9rem; cursor: pointer; opacity: 0.35; line-height: 1; }
+.blessing-badge.active { opacity: 1; border-color: var(--accent); }
+.opp-head .blessing-badge { cursor: default; opacity: 1; padding: 0; }
+
+/* Player-level counters (poison/energy/experience + custom) and commander damage. */
+.seat-status { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.6rem; }
+.player-counters, .commander-damage { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.pc-pill {
+  display: flex; align-items: center; gap: 0.3rem; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 999px; padding: 0.2rem 0.3rem 0.2rem 0.6rem; font-size: 0.76rem;
+}
+.pc-pill.danger { border-color: var(--danger); color: var(--danger); }
+.pc-pill .val { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 1.1rem; text-align: center; }
+.pc-pill button { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 0.7rem; line-height: 1; padding: 0; }
+.pc-add { display: flex; gap: 0.3rem; align-items: center; }
+.pc-add input { font-size: 0.78rem; padding: 0.25rem 0.5rem; width: 9rem; }
+.pc-add-btn { font-size: 0.76rem; padding: 0.3rem 0.6rem; }
+.commander-damage .qlabel { width: 100%; }
+
+/* Commander tax badge on a command-zone card. */
+.command-card-wrap { position: relative; }
+.tax-badge {
+  position: absolute; top: -4px; right: -4px; background: var(--accent); color: var(--accent-ink); font-size: 0.6rem; font-weight: 800;
+  border-radius: 999px; padding: 0.05rem 0.35rem; font-variant-numeric: tabular-nums; z-index: 2;
+}
+
+/* Attacking/blocking badges on a battlefield permanent. */
+.combatbadge { position: absolute; bottom: 3px; left: 3px; font-size: 0.75rem; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); z-index: 1; }
+
+/* Combat sub-sections within a card's ctx-menu. */
+.hd2 { padding: 0.3rem 0.55rem 0.15rem; color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.block-order { display: flex; flex-direction: column; gap: 0.1rem; }
+.block-order-row { display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.55rem; font-size: 0.78rem; }
+.block-order-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.block-order-row button { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-size: 0.7rem; line-height: 1; padding: 0; }
+
+.dice-roll-row { display: flex; gap: 0.3rem; }
+.dice-roll-row select { font-size: 0.8rem; padding: 0.4rem 0.3rem; width: 4rem; }
 
 .quadrants { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "tl tr" "bl br"; gap: 0.6rem; }
 .q-creatures { grid-area: tl; }
@@ -90,7 +147,7 @@ body.kt-dragging .handtile, body.kt-dragging .permtile { cursor: grabbing; }
 .ctx-menu {
   position: absolute; top: 20px; left: 78px; z-index: 20; background: var(--surface); border: 1px solid var(--border);
   border-radius: 10px; box-shadow: 0 12px 28px -14px var(--shadow); padding: 0.4rem; width: 210px; font-size: 0.82rem;
-  display: flex; flex-direction: column; gap: 0.1rem;
+  display: flex; flex-direction: column; gap: 0.1rem; max-height: min(70vh, 480px); overflow-y: auto;
   /* Hand cards fan out via rotation + a y-offset on .handtile (--fan-rot/--fan-y); counter-apply
      both, in reverse order, so the menu (a child of that transformed tile) still appears upright
      and in its normal position instead of inheriting the card's tilt/rise. */

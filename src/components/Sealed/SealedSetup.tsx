@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useSealed } from "../../store/useSealed";
+import { useAuth } from "../../store/useAuth";
 import type { RarityWeights } from "../../lib/types";
 
 const RARITY_LABELS: { key: keyof RarityWeights; label: string }[] = [
@@ -10,8 +11,12 @@ const RARITY_LABELS: { key: keyof RarityWeights; label: string }[] = [
 ];
 
 export default function SealedSetup() {
-  const budget = useSealed((s) => s.budget);
-  const setBudget = useSealed((s) => s.setBudget);
+  const draftName = useSealed((s) => s.draftName);
+  const setDraftName = useSealed((s) => s.setDraftName);
+  const draftBudget = useSealed((s) => s.draftBudget);
+  const setDraftBudget = useSealed((s) => s.setDraftBudget);
+  const draftInvites = useSealed((s) => s.draftInvites);
+  const setDraftInvites = useSealed((s) => s.setDraftInvites);
   const config = useSealed((s) => s.config);
   const setConfig = useSealed((s) => s.setConfig);
   const setRarityWeight = useSealed((s) => s.setRarityWeight);
@@ -22,24 +27,59 @@ export default function SealedSetup() {
   const selectAllSets = useSealed((s) => s.selectAllSets);
   const clearAllSets = useSealed((s) => s.clearAllSets);
   const loadError = useSealed((s) => s.loadError);
-  const startSession = useSealed((s) => s.startSession);
+  const createGame = useSealed((s) => s.createGame);
+  const cancelSetup = useSealed((s) => s.cancelSetup);
+  const user = useAuth((s) => s.user);
 
   useEffect(() => {
     loadAvailableSets();
   }, [loadAvailableSets]);
 
   return (
-    <section>
+    <section data-tour="sealed-main">
       <div className="screen-head">
-        <h2>Sealed Pool</h2>
-        <span className="sub">Set a budget, pick your sets, open packs or buy cards directly, then build the best deck you can</span>
+        <h2>New pool game</h2>
+        <span className="sub">These rules are locked in when the game starts, and everyone you invite plays by exactly the same ones</span>
       </div>
 
       <div className="sealed-setup-grid">
         <div className="sealed-setup-col">
           <div className="filter-block">
-            <label>Budget ($)</label>
-            <input type="number" min={0} value={budget} onChange={(e) => setBudget(Number(e.target.value) || 0)} />
+            <label htmlFor="poolgame-name">Game name</label>
+            <input
+              id="poolgame-name"
+              type="text"
+              placeholder="Friday night sealed"
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-block">
+            <label htmlFor="poolgame-budget">Budget ($)</label>
+            <input
+              id="poolgame-budget"
+              type="number"
+              min={0}
+              value={draftBudget}
+              onChange={(e) => setDraftBudget(Number(e.target.value) || 0)}
+            />
+          </div>
+
+          <div className="filter-block">
+            <label htmlFor="poolgame-invites">Invite players</label>
+            <input
+              id="poolgame-invites"
+              type="text"
+              placeholder="username, another_user"
+              value={draftInvites}
+              onChange={(e) => setDraftInvites(e.target.value)}
+            />
+            <p className="hint">
+              Their Kitchen Table usernames, separated by commas. Each one gets their own budget and their own packs under
+              these same rules — you'll all see each other's spending and card counts, but never each other's cards.
+              {user && <> You're playing as <b>{user.username}</b>.</>}
+            </p>
           </div>
 
           <div className="filter-block">
@@ -99,7 +139,10 @@ export default function SealedSetup() {
 
       {loadError && <p className="report-error">{loadError}</p>}
 
-      <button className="btn primary" onClick={startSession}>Start sealed pool</button>
+      <div className="actions">
+        <button className="btn primary" onClick={createGame}>Start pool game</button>
+        <button className="btn" onClick={cancelSetup}>Cancel</button>
+      </div>
     </section>
   );
 }

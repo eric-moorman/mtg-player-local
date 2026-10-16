@@ -21,7 +21,8 @@ export interface SyncData {
 
 class ApiError extends Error {}
 
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
+/** Shared by the pool-game routes too (src/lib/poolGames.ts) — same session cookie, same error shape. */
+export async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
     credentials: "include",

@@ -16,6 +16,14 @@ import type { Env } from "./env";
 import { json } from "./http";
 import { handleRegister, handleLogin, handleLogout, handleMe } from "./auth";
 import { handleGetSync, handlePutSync } from "./sync";
+import {
+  handleCreatePoolGame,
+  handleDeletePoolGame,
+  handleGetPoolGame,
+  handleInviteToPoolGame,
+  handleListPoolGames,
+  handlePutPoolGameProgress,
+} from "./poolGames";
 
 export type { Env };
 
@@ -49,6 +57,24 @@ export default {
     if (pathname === "/api/auth/me" && method === "GET") return handleMe(request, env);
     if (pathname === "/api/sync" && method === "GET") return handleGetSync(request, env);
     if (pathname === "/api/sync" && method === "PUT") return handlePutSync(request, env);
+
+    if (pathname === "/api/pool-games") {
+      if (method === "GET") return handleListPoolGames(request, env);
+      if (method === "POST") return handleCreatePoolGame(request, env);
+    }
+    // /api/pool-games/<id> and /api/pool-games/<id>/<action> — the only routes here
+    // with a path parameter, so they're matched by segment rather than by equality.
+    if (pathname.startsWith("/api/pool-games/")) {
+      const segments = pathname.slice("/api/pool-games/".length).split("/");
+      const gameId = segments[0];
+      const action = segments[1];
+      if (gameId && segments.length <= 2) {
+        if (!action && method === "GET") return handleGetPoolGame(request, env, gameId);
+        if (!action && method === "DELETE") return handleDeletePoolGame(request, env, gameId);
+        if (action === "progress" && method === "PUT") return handlePutPoolGameProgress(request, env, gameId);
+        if (action === "invite" && method === "POST") return handleInviteToPoolGame(request, env, gameId);
+      }
+    }
 
     return new Response("Not found", { status: 404 });
   },

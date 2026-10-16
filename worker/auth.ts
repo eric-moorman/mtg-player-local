@@ -113,6 +113,19 @@ export async function handleMe(request: Request, env: Env): Promise<Response> {
   return json({ user: user ? { username: user.username } : null });
 }
 
+/**
+ * Looks up an account by username, case-insensitively, for features that address
+ * users by name rather than by session — currently pool-game invites. Returns the
+ * stored record's id and canonical-cased username; never the salt or hash.
+ */
+export async function lookupUserByUsername(env: Env, username: string): Promise<{ id: string; username: string } | null> {
+  if (!USERNAME_RE.test(username.trim())) return null;
+  const raw = await env.RATE_LIMIT_KV.get(userKey(username));
+  if (!raw) return null;
+  const user: UserRecord = JSON.parse(raw);
+  return { id: user.id, username: user.username };
+}
+
 /** Resolves the signed-in user (or null) from the session cookie — used by the sync routes too. */
 export async function getSessionUser(request: Request, env: Env): Promise<SessionUser | null> {
   const sessionId = readSessionCookie(request);

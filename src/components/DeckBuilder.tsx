@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "../store/useGame";
 import { useInspector } from "../store/useInspector";
-import { parseDecklistText, searchLive, serializeDecklist } from "../lib/scryfall";
+import { parseDecklistText, searchLive, serializeDecklist, fetchCardByName, BASIC_LAND_NAMES, BASIC_LAND_MANA } from "../lib/scryfall";
 import { newId } from "../lib/reducer";
 import type { CardData, Deck, DeckCard } from "../lib/types";
 import "./DeckBuilder.css";
@@ -57,6 +57,8 @@ export default function DeckBuilder() {
   const [commanders, setCommanders] = useState<string[]>([]);
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");
+  const [basicQty, setBasicQty] = useState(8);
+  const [addingBasic, setAddingBasic] = useState<string | null>(null);
 
   const hasCatalog = catalog.length > 0;
 
@@ -119,15 +121,30 @@ export default function DeckBuilder() {
     return deckCards.find((c) => c.name.toLowerCase() === name.toLowerCase())?.qty ?? 0;
   }
 
-  function addOne(card: CardData) {
+  function addQty(card: CardData, qty: number) {
     setCardIndex((prev) => new Map(prev).set(card.name.toLowerCase(), card));
     setDeckCards((prev) => {
       const idx = prev.findIndex((c) => c.name.toLowerCase() === card.name.toLowerCase());
-      if (idx === -1) return [...prev, { name: card.name, qty: 1 }];
+      if (idx === -1) return [...prev, { name: card.name, qty }];
       const next = [...prev];
-      next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+      next[idx] = { ...next[idx], qty: next[idx].qty + qty };
       return next;
     });
+  }
+
+  function addOne(card: CardData) {
+    addQty(card, 1);
+  }
+
+  async function handleAddBasic(name: string) {
+    let card = cardIndex.get(name.toLowerCase());
+    if (!card) {
+      setAddingBasic(name);
+      card = (await fetchCardByName(name)) ?? undefined;
+      setAddingBasic(null);
+      if (!card) return;
+    }
+    addQty(card, basicQty);
   }
 
   function removeOne(name: string) {
@@ -218,7 +235,7 @@ export default function DeckBuilder() {
 
       <div className="db-grid">
         <div className="db-col">
-          <div className="filter-block">
+          <div className="filter-block" data-tour="db-search">
             <label>Search</label>
             <input type="text" placeholder="Card name…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
@@ -303,7 +320,7 @@ export default function DeckBuilder() {
         </div>
 
         <div className="db-col">
-          <div className="card-grid">
+          <div className="card-grid" data-tour="db-results">
             {results.map((c) => (
               <div className="cardtile" key={c.id} onClick={() => openInspector(c)}>
                 {c.image_small && <img src={c.image_small} alt={c.name} />}
@@ -320,7 +337,32 @@ export default function DeckBuilder() {
         </div>
 
         <div className="db-col">
-          <div className="decklist">
+          <div className="filter-block">
+            <label>Add basic lands</label>
+            <div className="basic-land-row">
+              <input
+                type="number" min={1} max={40} value={basicQty}
+                onChange={(e) => setBasicQty(Math.max(1, Number(e.target.value) || 1))}
+                aria-label="Quantity to add"
+              />
+              <div className="pips">
+                {BASIC_LAND_NAMES.map((n) => (
+                  <button
+                    key={n}
+                    className="pip"
+                    style={{ background: `var(--mana-${BASIC_LAND_MANA[n]})`, color: `var(--mana-${BASIC_LAND_MANA[n]}-ink)` }}
+                    onClick={() => handleAddBasic(n)}
+                    disabled={addingBasic === n}
+                    title={`Add ${basicQty} ${n}`}
+                  >
+                    {addingBasic === n ? "…" : BASIC_LAND_MANA[n].toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="decklist" data-tour="db-decklist">
             <input className="deck-name-input" value={deckName} onChange={(e) => setDeckName(e.target.value)} />
             <div className="count">
               {total} cards

@@ -28,7 +28,7 @@ function counterSignature(counters: Record<string, number>): string {
 export function groupPermanents(permanents: Permanent[]): PermanentStack[] {
   const groups = new Map<string, Permanent[]>();
   for (const p of permanents) {
-    const key = `${p.name}|${p.tapped}|${counterSignature(p.counters)}`;
+    const key = `${p.name}|${p.tapped}|${counterSignature(p.counters)}|${p.attacking ?? ""}|${p.blocking ?? ""}`;
     const list = groups.get(key);
     if (list) list.push(p);
     else groups.set(key, [p]);

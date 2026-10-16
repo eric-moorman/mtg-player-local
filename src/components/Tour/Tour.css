@@ -1,0 +1,24 @@
+.tour-backdrop {
+  position: fixed; inset: 0; z-index: 200; cursor: default;
+}
+.tour-backdrop-dim { background: var(--scrim); }
+.tour-spotlight {
+  position: fixed; z-index: 200; border-radius: 10px; pointer-events: none;
+  box-shadow: 0 0 0 9999px var(--scrim), 0 0 0 2px var(--accent);
+  transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+.tour-card {
+  position: fixed; z-index: 201; background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 1rem 1.1rem; box-shadow: 0 24px 48px -20px var(--shadow); display: flex; flex-direction: column; gap: 0.5rem;
+}
+.tour-card-head { display: flex; align-items: center; justify-content: space-between; }
+.tour-step-count { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.tour-close {
+  width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); cursor: pointer; font-size: 0.95rem; line-height: 1;
+}
+.tour-close:hover { background: var(--surface-3); }
+.tour-card h3 { font-size: 1.02rem; }
+.tour-card p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.45; margin: 0; }
+.tour-card-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 0.3rem; }
+.tour-nav-btns { display: flex; gap: 0.4rem; }
