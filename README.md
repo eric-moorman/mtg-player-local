@@ -19,6 +19,7 @@ Open the printed `localhost` URL. To actually test a game, open it in two browse
 
 - **Lobby** — create/join a room by code, pick a deck, ready up, host starts the game.
 - **Deck Builder** — search Scryfall (live, or against a one-time cached full catalog), build and save decks, import/export as text lists.
+- **Sealed Pool** — persistent "pool games": set a budget, the allowed sets, and the pack odds, then open packs and buy singles against that budget and build a deck from what you get. Progress saves to your account as you go, so games resume across sessions and devices, you can have several running at once, and you can invite friends by username — each gets their own budget and packs under the same frozen rules, and everyone sees each other's spending and card counts but never each other's cards. Finishing saves the result as an ordinary deck. Requires an account.
 - **Game Table** — per-player zones, a four-quadrant battlefield (creatures / planeswalkers / lands / artifacts & other) with identical-permanent stacking, tap/counters/move actions, tokens, life tracking, dice/coin, a synced table log and chat, and a full-card inspector with oracle text and keywords.
 - **Settings** — display name/color, and a playmat background (bundled or your own upload) that's local to your own view only.
 

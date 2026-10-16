@@ -181,3 +181,86 @@ export type ClientToHost =
   | { t: "chat"; text: string };
 
 export type HostToClient = { t: "state"; state: GameState } | { t: "error"; message: string };
+
+// ---- Pool Games (persistent, multi-player Sealed Pool sessions) ----
+
+/**
+ * The rules of a pool game, chosen by the host at creation and frozen from then on —
+ * every member plays by the identical numbers, which is the whole point of inviting
+ * people. Deliberately a copy of the host's settings rather than a reference to their
+ * account config, so later tweaking of personal defaults can't retroactively change
+ * a game in progress.
+ */
+export interface PoolGameSettings {
+  budget: number;
+  cardsPerPack: number;
+  packPrice: number;
+  rarityWeights: RarityWeights;
+  allowedSets: string[];
+}
+
+export interface PoolGameMember {
+  userId: string;
+  username: string;
+}
+
+/** Shared, host-owned half of a pool game. Written once at creation (plus on invite). */
+export interface PoolGameMeta {
+  id: string;
+  name: string;
+  createdAt: number;
+  hostUserId: string;
+  hostUsername: string;
+  settings: PoolGameSettings;
+  members: PoolGameMember[];
+}
+
+export interface PoolCardRecord {
+  uid: string;
+  card: CardData;
+  via: "pack" | "buy" | "basic";
+  fromSet?: string;
+}
+
+/**
+ * One member's private half of a pool game — their money, their cards, their deck.
+ * Stored under its own key so each player is the only writer of their own record,
+ * which is what keeps concurrent play safe on a store with no transactions.
+ */
+export interface PoolGameProgress {
+  gameId: string;
+  userId: string;
+  username: string;
+  spent: number;
+  pool: PoolCardRecord[];
+  deckSelections: Record<string, number>;
+  commanders: string[];
+  finished: boolean;
+  /** Name the finished deck was saved under, for the "completed" card in the game list. */
+  finishedDeckName?: string;
+  updatedAt: number;
+}
+
+/** What other members are allowed to see of each other: money and counts, never card names. */
+export interface PoolGamePlayerSummary {
+  userId: string;
+  username: string;
+  spent: number;
+  poolCount: number;
+  deckCount: number;
+  finished: boolean;
+  updatedAt: number;
+}
+
+export interface PoolGameListEntry {
+  meta: PoolGameMeta;
+  players: PoolGamePlayerSummary[];
+  /** The signed-in user's own summary, pulled out for convenience. */
+  me: PoolGamePlayerSummary | null;
+}
+
+export interface PoolGameDetail {
+  meta: PoolGameMeta;
+  players: PoolGamePlayerSummary[];
+  progress: PoolGameProgress;
+}

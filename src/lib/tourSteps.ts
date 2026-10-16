@@ -48,7 +48,7 @@ export const TOUR_STEPS: TourStep[] = [
     screen: "sealed",
     selector: '[data-tour="sealed-main"]',
     title: "Sealed Pool",
-    body: "Set a budget and pick which sets are in play, then open packs or buy singles directly. Once you've got a pool, build the best deck you can from whatever you end up with.",
+    body: "Start a pool game: set a budget, pick which sets are in play, and tune the pack odds. Then open packs or buy singles, and build the best deck you can from whatever you end up with. Games save as you go, you can run several at once, and you can invite friends by username to play the same rules.",
   },
   {
     screen: "table",

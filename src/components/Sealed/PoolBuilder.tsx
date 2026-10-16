@@ -10,6 +10,7 @@ function formatPrice(n: number) {
 }
 
 export default function PoolBuilder() {
+  const game = useSealed((s) => s.game);
   const pool = useSealed((s) => s.pool);
   const deckSelections = useSealed((s) => s.deckSelections);
   const addToDeck = useSealed((s) => s.addToDeck);
@@ -18,14 +19,17 @@ export default function PoolBuilder() {
   const toggleCommander = useSealed((s) => s.toggleCommander);
   const addBasicLands = useSealed((s) => s.addBasicLands);
   const setActiveTab = useSealed((s) => s.setActiveTab);
-  const saveAsDeck = useSealed((s) => s.saveAsDeck);
-  const reset = useSealed((s) => s.reset);
+  const finishGame = useSealed((s) => s.finishGame);
+  const finished = useSealed((s) => s.finished);
+  const finishedDeckName = useSealed((s) => s.finishedDeckName);
+  const closeGame = useSealed((s) => s.closeGame);
   const openInspector = useInspector((s) => s.open);
   const refreshDecks = useGame((s) => s.refreshDecks);
   const setScreen = useGame((s) => s.setScreen);
 
-  const [deckName, setDeckName] = useState("Sealed pool");
-  const [saved, setSaved] = useState(false);
+  const [deckName, setDeckName] = useState(() => game?.name ?? "Sealed pool");
+  const [finishing, setFinishing] = useState(false);
+  const [confirmFinish, setConfirmFinish] = useState(false);
   const [basicQty, setBasicQty] = useState(8);
   const [addingBasic, setAddingBasic] = useState<string | null>(null);
 
@@ -48,20 +52,26 @@ export default function PoolBuilder() {
   const grouped = useMemo(() => Array.from(poolByName.values()).sort((a, b) => a.card.name.localeCompare(b.card.name)), [poolByName]);
   const totalInDeck = Object.values(deckSelections).reduce((sum, n) => sum + n, 0);
 
-  async function handleSave() {
-    await saveAsDeck(deckName);
+  async function handleFinish() {
+    setFinishing(true);
+    await finishGame(deckName);
     await refreshDecks();
-    setSaved(true);
+    setFinishing(false);
+    setConfirmFinish(false);
   }
 
-  if (saved) {
+  if (finished) {
     return (
-      <div className="lobby-card" style={{ maxWidth: 480, margin: "0 auto" }}>
-        <h3>Deck saved</h3>
-        <p>"{deckName}" is saved and ready to use, just like any other deck.</p>
+      <div className="lobby-card" style={{ maxWidth: 520, margin: "0 auto" }}>
+        <h3>Pool game complete</h3>
+        <p>
+          "{finishedDeckName ?? deckName}" is saved and ready to use, just like any other deck. Your pool is still here if
+          you want to look back at what you opened.
+        </p>
         <div className="actions">
           <button className="btn primary" onClick={() => setScreen("lobby")}>Go to Lobby</button>
-          <button className="btn" onClick={reset}>Start a new sealed pool</button>
+          <button className="btn" onClick={() => setScreen("deckbuilder")}>Open in Deck Builder</button>
+          <button className="btn" onClick={closeGame}>← All pool games</button>
         </div>
       </div>
     );
@@ -153,10 +163,29 @@ export default function PoolBuilder() {
             })}
             {totalInDeck === 0 && <li className="hint">Click a pool card's + to add it to the deck.</li>}
           </ul>
-          <div className="actions">
-            <button className="btn" onClick={() => setActiveTab("packs")}>← Open Packs / Buy</button>
-            <button className="btn primary" onClick={handleSave} disabled={totalInDeck === 0}>Save as deck</button>
-          </div>
+
+          {/* Finishing ends the game, so it asks once rather than firing straight off a single click. */}
+          {confirmFinish ? (
+            <div className="poolgame-finish-confirm">
+              <p className="hint">
+                This ends "{game?.name}" and saves these {totalInDeck} cards as a deck. You won't be able to open more packs
+                in this game afterwards.
+              </p>
+              <div className="actions">
+                <button className="btn primary" onClick={handleFinish} disabled={finishing}>
+                  {finishing ? "Saving…" : "Finish & save deck"}
+                </button>
+                <button className="btn" onClick={() => setConfirmFinish(false)} disabled={finishing}>Keep building</button>
+              </div>
+            </div>
+          ) : (
+            <div className="actions">
+              <button className="btn" onClick={() => setActiveTab("packs")}>← Open Packs / Buy</button>
+              <button className="btn primary" onClick={() => setConfirmFinish(true)} disabled={totalInDeck === 0}>
+                Finish & save deck
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -78,3 +78,74 @@
 
 .sealed-build-grid { grid-template-columns: 1fr 280px; }
 .sealed-build-grid .card-grid { max-height: 65vh; overflow-y: auto; }
+
+/* ---- Pool games: saved, resumable, multi-player sealed sessions ---- */
+
+.poolgame-list-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.8rem; }
+.poolgame-list-head .sealed-subhead { margin: 0; }
+
+.poolgame-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+
+.poolgame-card {
+  display: flex; flex-direction: column; gap: 0.7rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem; box-shadow: 0 1px 3px var(--shadow);
+}
+.poolgame-card.finished { background: var(--surface-2); }
+.poolgame-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.poolgame-card-head h4 { margin: 0; font-family: var(--font-display); font-size: 1.05rem; }
+
+.poolgame-badge {
+  flex-shrink: 0; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0.18rem 0.45rem; border-radius: 999px; font-weight: 600;
+}
+.poolgame-badge.done { background: var(--good); color: var(--accent-ink); }
+.poolgame-badge.done.small { font-size: 0.6rem; padding: 0.1rem 0.35rem; }
+
+.poolgame-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; font-size: 0.74rem; color: var(--text-dim); }
+
+.poolgame-stats { display: flex; gap: 1rem; }
+.poolgame-stat { display: flex; flex-direction: column; }
+.poolgame-stat .n { font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.poolgame-stat .l { font-size: 0.68rem; color: var(--text-dim); }
+
+.poolgame-roster { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.poolgame-roster li {
+  display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem;
+  background: var(--surface-2); border-radius: 7px; padding: 0.3rem 0.5rem;
+}
+.poolgame-roster.compact li { background: none; padding: 0.15rem 0; }
+.poolgame-roster li.me { font-weight: 600; }
+.poolgame-roster .r-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.poolgame-roster .r-host { color: var(--accent); margin-left: 0.3rem; }
+.poolgame-roster .r-stat { color: var(--text-dim); font-size: 0.72rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+.poolgame-card-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: auto; }
+.poolgame-confirm { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text-dim); }
+.poolgame-confirm .btn { padding: 0.25rem 0.55rem; font-size: 0.72rem; }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: var(--accent-ink); }
+
+.poolgame-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.poolgame-head-actions { display: flex; align-items: center; gap: 0.7rem; flex-shrink: 0; }
+.poolgame-save-state { font-size: 0.72rem; color: var(--text-dim); }
+.poolgame-save-state.saved { color: var(--good); }
+.poolgame-save-state.error { color: var(--danger); }
+
+.poolgame-roster-panel {
+  margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 0.5rem; max-width: 520px;
+}
+.poolgame-roster-panel .sealed-subhead { margin: 0; }
+.poolgame-invite-btn { align-self: flex-start; }
+.poolgame-invite-form { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.poolgame-finish-confirm {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  background: var(--accent-soft); border-radius: 9px; padding: 0.7rem; margin-top: 0.6rem;
+}
+.poolgame-finish-confirm .hint { margin: 0; }
+
+@media (max-width: 760px) {
+  .poolgame-grid { grid-template-columns: 1fr; }
+  .poolgame-head { flex-direction: column; }
+}

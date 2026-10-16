@@ -12,9 +12,8 @@ function formatPrice(n: number) {
 }
 
 export default function SealedBuy() {
-  const budget = useSealed((s) => s.budget);
+  const rules = useSealed((s) => s.rules);
   const spent = useSealed((s) => s.spent);
-  const allowedSets = useSealed((s) => s.allowedSets);
   const setPools = useSealed((s) => s.setPools);
   const buyCard = useSealed((s) => s.buyCard);
   const openInspector = useInspector((s) => s.open);
@@ -28,13 +27,14 @@ export default function SealedBuy() {
   const [priceMax, setPriceMax] = useState("");
   const [keywordFilter, setKeywordFilter] = useState("");
 
-  const remaining = budget - spent;
+  const allowedSets = rules?.allowedSets ?? [];
+  const remaining = (rules?.budget ?? 0) - spent;
 
   const allCards = useMemo(() => {
     const out: { card: CardData; setCode: string }[] = [];
     for (const code of allowedSets) for (const card of setPools[code] ?? []) out.push({ card, setCode: code });
     return out;
-  }, [allowedSets, setPools]);
+  }, [rules, setPools]);
 
   function toggleColor(c: string) {
     setColors((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
