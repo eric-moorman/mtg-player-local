@@ -34,7 +34,6 @@ export default function SealedBuy() {
   const [results, setResults] = useState<CardData[]>([]);
   const [searching, setSearching] = useState(false);
 
-  const allowedSets = useMemo(() => rules?.allowedSets ?? [], [rules]);
   const remaining = (rules?.budget ?? 0) - spent;
   const setNames = useMemo(() => new Map(availableSets.map((s) => [s.code, s.name])), [availableSets]);
 
@@ -53,6 +52,9 @@ export default function SealedBuy() {
    * allow hundreds of sets, and downloading them all just to filter locally is
    * what used to make opening a game take minutes. Same debounce the Deck
    * Builder uses for its live search.
+   *
+   * Not limited to the game's allowed sets — those decide which packs you can
+   * open, not what a shop will sell you.
    */
   useEffect(() => {
     if (!hasCriteria) {
@@ -63,19 +65,16 @@ export default function SealedBuy() {
     setSearching(true);
     let cancelled = false;
     const handle = setTimeout(() => {
-      searchPurchasable(
-        {
-          name: query,
-          colors,
-          type: typeFilter,
-          keyword: keywordFilter,
-          cmcMin: numOrNull(cmcMin),
-          cmcMax: numOrNull(cmcMax),
-          priceMin: numOrNull(priceMin),
-          priceMax: numOrNull(priceMax),
-        },
-        allowedSets,
-      )
+      searchPurchasable({
+        name: query,
+        colors,
+        type: typeFilter,
+        keyword: keywordFilter,
+        cmcMin: numOrNull(cmcMin),
+        cmcMax: numOrNull(cmcMax),
+        priceMin: numOrNull(priceMin),
+        priceMax: numOrNull(priceMax),
+      })
         .then((cards) => {
           if (cancelled) return;
           setResults(cards);
@@ -91,7 +90,7 @@ export default function SealedBuy() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [hasCriteria, query, colors, typeFilter, keywordFilter, cmcMin, cmcMax, priceMin, priceMax, allowedSets]);
+  }, [hasCriteria, query, colors, typeFilter, keywordFilter, cmcMin, cmcMax, priceMin, priceMax]);
 
   function toggleColor(c: string) {
     setColors((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
@@ -175,11 +174,14 @@ export default function SealedBuy() {
               </div>
             );
           })}
-          {!hasCriteria && <p className="hint">Search by name, or use the filters, to find cards to buy from this game's sets.</p>}
-          {hasCriteria && searching && <p className="hint">Searching Scryfall…</p>}
-          {hasCriteria && !searching && results.length === 0 && (
-            <p className="hint">No cards match those filters in this game's sets.</p>
+          {!hasCriteria && (
+            <p className="hint">
+              Search by name, or use the filters, to find cards to buy. Any card in paper Magic is for sale here, not just
+              the sets your packs come from — the same card from different sets is listed at each set's own price.
+            </p>
           )}
+          {hasCriteria && searching && <p className="hint">Searching Scryfall…</p>}
+          {hasCriteria && !searching && results.length === 0 && <p className="hint">No cards match those filters.</p>}
         </div>
       </div>
 
