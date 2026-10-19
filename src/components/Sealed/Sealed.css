@@ -164,3 +164,4 @@
   padding: 0.15rem 0.5rem; font-size: 0.62rem; letter-spacing: 0.04em; font-weight: 600;
 }
 .sealed-sell-note { margin: 0; font-size: 0.72rem; }
+.sealed-pool-sell { font-size: 0.72rem; color: var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; }

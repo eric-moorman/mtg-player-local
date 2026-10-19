@@ -100,7 +100,7 @@ export default function SealedSetup() {
                 />
               </label>
               <label className="sealed-config-row">
-                <span>Sell-back (%)</span>
+                <span>Pack sell-back (%)</span>
                 <input
                   type="number" min={0} max={100} step={5}
                   value={Math.round(config.sellBackRate * 100)}
@@ -108,9 +108,10 @@ export default function SealedSetup() {
                 />
               </label>
               <p className="hint">
-                What selling a card back pays, as a share of its market price. Anything near 100% makes packs a money
-                printer — a typical ${config.packPrice.toFixed(2)} pack holds more than that in singles, so you could open
-                and liquidate forever. 50% is the usual card-shop spread and keeps the budget meaningful.
+                What selling a <b>pack pull</b> back pays, as a share of its market price. Anything near 100% makes packs a
+                money printer — a typical ${config.packPrice.toFixed(2)} pack holds more than that in singles, so you could
+                open and liquidate forever. 50% is the usual card-shop spread and keeps the budget meaningful. Cards you
+                buy individually always refund in full, so a purchase is yours to undo.
               </p>
               {RARITY_LABELS.map(({ key, label }) => (
                 <label className="sealed-config-row" key={key}>

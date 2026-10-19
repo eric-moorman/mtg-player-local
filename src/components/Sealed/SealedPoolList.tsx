@@ -1,10 +1,12 @@
 import { useSealed } from "../../store/useSealed";
 import { useInspector } from "../../store/useInspector";
-import { sellBackRate, sellValue } from "../../lib/scryfall";
+import { sellBackRate, sellRateFor, sellValue } from "../../lib/scryfall";
 
 function formatPrice(n: number) {
   return `$${n.toFixed(2)}`;
 }
+
+const VIA_LABEL = { pack: "pack", basic: "free", buy: "bought" } as const;
 
 export default function SealedPoolList() {
   const pool = useSealed((s) => s.pool);
@@ -13,30 +15,40 @@ export default function SealedPoolList() {
   const rules = useSealed((s) => s.rules);
   const openInspector = useInspector((s) => s.open);
 
-  const rate = sellBackRate(rules);
+  const packRate = sellBackRate(rules);
+  const hasPackCards = pool.some((p) => p.via === "pack");
+  const hasBoughtCards = pool.some((p) => p.via === "buy");
 
   return (
     <div className="sealed-session-col">
       <h3 className="sealed-subhead">Your pool</h3>
       {!finished && pool.length > 0 && (
-        <p className="hint sealed-sell-note">Selling pays {Math.round(rate * 100)}% of a card's market price.</p>
+        <p className="hint sealed-sell-note">
+          {hasBoughtCards && "Cards you bought refund in full. "}
+          {hasPackCards && `Pack pulls sell back for ${Math.round(packRate * 100)}% of market price.`}
+        </p>
       )}
       <ul className="sealed-pool-list">
         {pool.map((p) => {
-          const sellPrice = sellValue(p.card, rate);
+          // Per card, not per game: a bought single and a pack pull refund differently.
+          const sellPrice = sellValue(p.card, sellRateFor(p.via, rules));
           return (
             <li key={p.uid}>
               <span className="sealed-pool-name" onClick={() => openInspector(p.card)}>{p.card.name}</span>
-              <span className="sealed-pool-via">{p.via === "pack" ? "pack" : p.via === "basic" ? "free" : "bought"}</span>
+              <span className="sealed-pool-via">{VIA_LABEL[p.via]}</span>
               {!finished && (
-                <button
-                  className="mini-x"
-                  onClick={() => removeFromPool(p.uid)}
-                  title={`Sell for ${formatPrice(sellPrice)}`}
-                  aria-label={`Sell ${p.card.name} for ${formatPrice(sellPrice)}`}
-                >
-                  ×
-                </button>
+                <>
+                  {/* Shown rather than left in a tooltip, since the amount now depends on where the card came from. */}
+                  <span className="sealed-pool-sell">{formatPrice(sellPrice)}</span>
+                  <button
+                    className="mini-x"
+                    onClick={() => removeFromPool(p.uid)}
+                    title={`Sell ${p.card.name} for ${formatPrice(sellPrice)}`}
+                    aria-label={`Sell ${p.card.name} for ${formatPrice(sellPrice)}`}
+                  >
+                    ×
+                  </button>
+                </>
               )}
             </li>
           );

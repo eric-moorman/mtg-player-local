@@ -487,12 +487,13 @@ export const useSealed = create<SealedStore>((set, get) => {
       const s = get();
       const entry = s.pool.find((p) => p.uid === uid);
       if (!entry) return;
-      // Pack-sourced cards can be sold back too, same as bought ones — both refund a
-      // fraction of the price stored on the card when it was acquired, so a later Scryfall
-      // price move can't silently change what a sale is worth mid-game. The fraction is the
-      // game's sell-back rate: without that spread, opening packs and liquidating them is a
-      // reliable profit and the budget stops constraining anything.
-      const refund = scryfall.sellValue(entry.card, scryfall.sellBackRate(s.rules));
+      // The refund is always against the price stored on the card when it was acquired, so
+      // a later Scryfall price move can't change what a sale is worth mid-game. How much of
+      // that price comes back depends on where the card came from: a bought single refunds
+      // in full (a purchase you can undo), while a pack pull takes the game's sell-back
+      // spread — without that spread, opening packs and liquidating them is a reliable
+      // profit and the budget stops constraining anything.
+      const refund = scryfall.sellValue(entry.card, scryfall.sellRateFor(entry.via, s.rules));
       const nextPool = s.pool.filter((p) => p.uid !== uid);
       // Clamp the deck selection for this name in case the removed copy was one chosen for the deck.
       const available = poolQtyByName(nextPool, entry.card.name);

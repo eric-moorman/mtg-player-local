@@ -1,5 +1,5 @@
 import { getCatalogMeta, loadCatalogChunks, loadSetPool, saveCatalogChunks, saveSetPool, setCatalogMeta } from "./db";
-import type { CardData, DeckCard, RarityWeights, SetInfo } from "./types";
+import type { CardData, DeckCard, PoolCardRecord, RarityWeights, SetInfo } from "./types";
 
 const USER_AGENT_NOTE = "KitchenTable/0.1 (friends-only P2P MTG table; non-commercial)";
 const CHUNK_SIZE = 4000;
@@ -303,6 +303,18 @@ export const DEFAULT_SELL_BACK_RATE = 0.5;
 export function sellBackRate(settings: { sellBackRate?: number } | null | undefined): number {
   const rate = settings?.sellBackRate;
   return typeof rate === "number" && rate >= 0 && rate <= 1 ? rate : DEFAULT_SELL_BACK_RATE;
+}
+
+/**
+ * The spread applies to pack pulls only. A card bought as a single refunds in
+ * full, which makes a purchase a reversible decision rather than a gamble —
+ * and it can't become a money loop, because the price is frozen onto the card
+ * when it's acquired, so buying and selling back is exactly break-even.
+ *
+ * Free basics land here too, at a rate against a $0 price, so they stay free.
+ */
+export function sellRateFor(source: PoolCardRecord["via"], settings: { sellBackRate?: number } | null | undefined): number {
+  return source === "pack" ? sellBackRate(settings) : 1;
 }
 
 /** What selling this card actually pays, rounded to whole cents so the budget never drifts. */
