@@ -132,12 +132,16 @@ export default function SealedSetup() {
 
         <div className="sealed-setup-col sealed-sets-col">
           <div className="sealed-sets-head">
-            <label>Allowed sets ({allowedSets.length} selected)</label>
+            <label>Pack sets ({allowedSets.length} selected)</label>
             <div className="sealed-sets-bulk">
               <button className="btn" onClick={selectAllSets} disabled={availableSets.length === 0}>Select all</button>
               <button className="btn" onClick={clearAllSets} disabled={allowedSets.length === 0}>Clear</button>
             </div>
           </div>
+          <p className="hint sealed-sets-note">
+            Which sets your packs come from. Buying singles isn't limited to these — the Buy Cards tab sells any card in
+            paper Magic, including ones that only ever appeared in Commander decks.
+          </p>
           <div className="sealed-set-list">
             {availableSets.length === 0 && <p className="hint">Loading sets from Scryfall…</p>}
             {availableSets.map((s) => (

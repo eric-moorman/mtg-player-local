@@ -165,3 +165,4 @@
 }
 .sealed-sell-note { margin: 0; font-size: 0.72rem; }
 .sealed-pool-sell { font-size: 0.72rem; color: var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.sealed-sets-note { margin: 0 0 0.5rem; font-size: 0.72rem; }
