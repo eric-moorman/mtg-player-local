@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGame } from "../store/useGame";
+import { copyText } from "../lib/clipboard";
 import "./Lobby.css";
 
 export default function Lobby() {
@@ -23,6 +24,11 @@ export default function Lobby() {
   const [joinCode, setJoinCode] = useState("");
   const [busy, setBusy] = useState<"host" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [codeCopied, setCodeCopied] = useState<boolean | null>(null);
+
+  async function handleCopyCode() {
+    setCodeCopied(await copyText(roomCode ?? ""));
+  }
 
   const me = gameState?.players.find((p) => p.id === myId);
 
@@ -105,7 +111,9 @@ export default function Lobby() {
           <h3>Room code</h3>
           <p>Share this with friends so they can join directly.</p>
           <div className="room-code">{roomCode}</div>
-          <button className="btn" onClick={() => navigator.clipboard?.writeText(roomCode ?? "")}>Copy code</button>
+          {/* Same silent-failure shape the deck export had: say whether the copy actually landed. */}
+          <button className="btn" onClick={handleCopyCode}>{codeCopied === true ? "Copied!" : "Copy code"}</button>
+          {codeCopied === false && <p className="hint">Couldn't reach the clipboard — copy the code above by hand.</p>}
         </div>
 
         <div className="lobby-card">
