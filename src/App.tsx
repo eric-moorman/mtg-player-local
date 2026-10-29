@@ -5,6 +5,7 @@ import { refreshAllFromAuthState } from "./lib/accountSync";
 import Lobby from "./components/Lobby";
 import DeckBuilder from "./components/DeckBuilder";
 import Sealed from "./components/Sealed/Sealed";
+import BanDraft from "./components/BanDraft/BanDraft";
 import GameTable from "./components/GameTable/GameTable";
 import Settings from "./components/Settings";
 import Inspector from "./components/Inspector";
@@ -42,6 +43,7 @@ export default function App() {
             {screen === "lobby" && <Lobby />}
             {screen === "deckbuilder" && <DeckBuilder />}
             {screen === "sealed" && <Sealed />}
+            {screen === "bandraft" && <BanDraft />}
             {screen === "table" && <GameTable />}
             {screen === "settings" && <Settings />}
           </div>

@@ -27,7 +27,7 @@ import type {
   PlayMat,
 } from "../lib/types";
 
-export type Screen = "lobby" | "deckbuilder" | "sealed" | "table" | "settings";
+export type Screen = "lobby" | "deckbuilder" | "sealed" | "bandraft" | "table" | "settings";
 export type Role = "offline" | "host" | "guest";
 
 const BUILTIN_PLAYMATS: PlayMat[] = [

@@ -1,0 +1,124 @@
+/* ---- Draft list ---- */
+
+.bandraft-list-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.8rem; }
+.bandraft-list-head h3 { font-size: 0.85rem; margin: 0; }
+
+.bandraft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+
+.bandraft-card {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 0.9rem 1rem;
+}
+.bandraft-card.yours { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.bandraft-card.complete { background: var(--surface-2); }
+.bandraft-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.bandraft-card-head h4 { margin: 0; font-family: var(--font-display); font-size: 1.05rem; }
+.bandraft-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; font-size: 0.74rem; color: var(--text-dim); }
+.bandraft-card-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: auto; }
+
+.bandraft-badge {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
+  border-radius: 999px; padding: 0.15rem 0.45rem; background: var(--surface-3); color: var(--text-dim); flex-shrink: 0;
+}
+.bandraft-badge.turn { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.bandraft-badge.done { background: var(--good); color: var(--accent-ink); }
+.bandraft-badge.waiting { background: var(--surface-3); }
+
+/* ---- Setup form ---- */
+
+.bandraft-setup { display: flex; flex-direction: column; gap: 1rem; max-width: 520px; }
+.bandraft-setup .filter-block { display: flex; flex-direction: column; gap: 0.35rem; }
+.bandraft-setup label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+
+/* ---- Active table ---- */
+
+.bandraft-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.bandraft-head-actions { display: flex; align-items: center; gap: 0.7rem; flex-shrink: 0; }
+
+.bandraft-prompt {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 1rem;
+}
+.bandraft-prompt.idle { border-left-color: var(--border); }
+.bandraft-prompt h3 { margin: 0; font-size: 1rem; }
+.bandraft-prompt p { margin: 0; font-size: 0.82rem; color: var(--text-dim); }
+
+/* The confirm bar sticks to the bottom so the chosen card and the button that
+   commits it are never separated by a scroll — these grids get tall. */
+.bandraft-confirm {
+  position: sticky; bottom: 0; z-index: 2;
+  display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 0.7rem 0.9rem; margin-top: 1rem;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.18);
+}
+.bandraft-confirm .btn.primary { font-size: 0.95rem; padding: 0.6rem 1.1rem; }
+.bandraft-confirm-note { font-size: 0.8rem; color: var(--text-dim); flex: 1; min-width: 12rem; }
+
+.bandraft-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; }
+
+.bandraft-tile {
+  position: relative; display: flex; flex-direction: column; gap: 0.3rem;
+  background: none; border: 2px solid transparent; border-radius: 10px; padding: 0.25rem;
+  cursor: pointer; text-align: left; color: inherit; font: inherit;
+}
+.bandraft-tile img { width: 100%; border-radius: 7px; display: block; aspect-ratio: 5/7; object-fit: cover; }
+/* Scryfall only ever yields cards that have art, but a printing can lose its
+   image between the deal and the pass — keep the grid even when that happens. */
+.bandraft-tile .permtile-placeholder {
+  width: 100%; aspect-ratio: 5/7; border-radius: 7px; background: var(--surface-2);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 0.4rem; font-size: 0.74rem; color: var(--text-dim);
+}
+.bandraft-tile .bandraft-tile-name { font-size: 0.74rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bandraft-tile:hover { border-color: var(--border); }
+.bandraft-tile.selected { border-color: var(--accent); background: var(--surface-2); }
+.bandraft-tile.selected .bandraft-tile-name { font-weight: 600; color: var(--text); }
+.bandraft-tile:disabled { cursor: default; }
+.bandraft-tile:disabled:hover { border-color: transparent; }
+
+.bandraft-tile.banned img { filter: grayscale(1) brightness(0.45); }
+.bandraft-tile.banned .bandraft-tile-name { color: var(--text-dim); text-decoration: line-through; }
+.bandraft-ban-stamp {
+  position: absolute; left: 0.25rem; right: 0.25rem; top: 38%;
+  text-align: center; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  background: var(--danger); color: var(--accent-ink); padding: 0.2rem 0.3rem; border-radius: 4px;
+  pointer-events: none;
+}
+
+.bandraft-tile.chosen { border-color: var(--good); }
+.bandraft-chosen-stamp {
+  position: absolute; left: 0.25rem; right: 0.25rem; top: 38%;
+  text-align: center; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  background: var(--good); color: var(--accent-ink); padding: 0.2rem 0.3rem; border-radius: 4px;
+  pointer-events: none;
+}
+
+/* ---- Table status ---- */
+
+.bandraft-table-panel {
+  display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.4rem;
+  border-top: 1px solid var(--border); padding-top: 1rem;
+}
+.bandraft-table-panel h3 { font-size: 0.85rem; margin: 0; }
+
+.bandraft-seats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.bandraft-seats li {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  background: var(--surface-2); border-radius: 7px; padding: 0.4rem 0.6rem; font-size: 0.8rem;
+}
+.bandraft-seats li.me { font-weight: 600; }
+.bandraft-seat-name { min-width: 7rem; }
+.bandraft-seat-host { color: var(--accent); margin-left: 0.3rem; }
+.bandraft-seat-state { color: var(--text-dim); font-size: 0.76rem; font-weight: 400; flex: 1; min-width: 12rem; }
+.bandraft-seat-commander { font-size: 0.78rem; color: var(--good); font-weight: 600; }
+
+.bandraft-invite-form { display: flex; flex-direction: column; gap: 0.5rem; max-width: 420px; }
+.bandraft-invite-btn { align-self: flex-start; }
+
+.bandraft-bans { list-style: none; margin: 0.3rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.bandraft-bans li { font-size: 0.76rem; color: var(--text-dim); }
+.bandraft-bans b { color: var(--text); font-weight: 600; }
+
+.bandraft-read-btn { padding: 0.15rem 0.5rem; font-size: 0.72rem; margin-left: 0.2rem; }
