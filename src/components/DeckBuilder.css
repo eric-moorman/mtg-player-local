@@ -68,3 +68,4 @@
 
 .basic-land-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .basic-land-row input { width: 4rem; flex-shrink: 0; }
+.export-ok { color: var(--good); }

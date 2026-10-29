@@ -50,6 +50,19 @@ export function IconPack({ size = 18 }: IconProps) {
   );
 }
 
+/** Commander Draft: a card being handed round a table. */
+export function IconPass({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" {...base}>
+      <rect x="2.5" y="5" width="8" height="10" rx="1.2" />
+      <path d="M12 7.5h5" />
+      <path d="M15 5.5 17.5 7.5 15 9.5" />
+      <path d="M17.5 12.5h-5" />
+      <path d="M15 10.5 12.5 12.5 15 14.5" />
+    </svg>
+  );
+}
+
 export function IconFlag({ size = 18 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" {...base}>

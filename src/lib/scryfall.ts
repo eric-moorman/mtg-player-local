@@ -450,3 +450,76 @@ export function openPack(pool: CardData[], cardsPerPack: number, weights: Rarity
   }
   return out;
 }
+
+// ---- Commander Draft: the commander pool ----
+
+/**
+ * Reserved key in the per-set pool cache (db.ts `setPools`). It can't collide
+ * with a real set code: Scryfall codes are short alphanumerics and never start
+ * with an underscore. Bump the suffix whenever COMMANDER_QUERY changes, so
+ * already-cached clients don't keep dealing from the old definition for a
+ * fortnight.
+ */
+const COMMANDER_POOL_KEY = "__commanders_v2";
+
+/**
+ * Backgrounds are excluded even though Scryfall counts them under `is:commander`:
+ * one is only ever a *second* commander alongside a "choose a Background"
+ * creature, so on its own it isn't something a player can pick here.
+ */
+const COMMANDER_QUERY = "is:commander legal:commander -is:digital -t:background";
+
+/**
+ * Every card that is legal to be a commander, cached in IndexedDB for a
+ * fortnight exactly like a set pool.
+ *
+ * It's ~3,500 cards across ~20 pages, which is a slow first call — hence the
+ * `onProgress` callback, so the UI can say what it's doing instead of hanging.
+ * Fetched whole rather than sampled a card at a time because the alternative,
+ * Scryfall's /cards/random endpoint, is one request per card: a four-player
+ * draft of ten-card packs would be forty round trips through the rate-limit
+ * queue every single time, versus twenty once per fortnight.
+ */
+export async function fetchCommanderPool(onProgress?: (loaded: number) => void): Promise<CardData[]> {
+  const cached = await loadSetPool(COMMANDER_POOL_KEY);
+  if (cached) return cached;
+
+  const cards: CardData[] = [];
+  let url: string | null = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(COMMANDER_QUERY)}&unique=cards&order=name`;
+  while (url) {
+    const res: Response = await politeFetch(url);
+    if (!res.ok) break;
+    const data: any = await res.json();
+    for (const raw of data.data ?? []) {
+      const s = slim(raw);
+      if (s) cards.push(s);
+    }
+    onProgress?.(cards.length);
+    url = data.has_more ? data.next_page : null;
+  }
+
+  // A partial list (Scryfall hiccup mid-pagination) is worse than no list, since
+  // it would be cached for two weeks and quietly narrow everyone's packs.
+  if (cards.length < 500) throw new Error("Couldn't load the commander list from Scryfall. Try again in a moment.");
+  await saveSetPool(COMMANDER_POOL_KEY, cards);
+  return cards;
+}
+
+/**
+ * Deals one pack per player off a single shuffle, so no two players are ever
+ * offered the same commander — the bans other people make should be about the
+ * card, not about racing you to it.
+ */
+export function dealCommanderPacks(pool: CardData[], playerCount: number, cardsPerPack: number): CardData[][] {
+  const needed = playerCount * cardsPerPack;
+  if (pool.length < needed) {
+    throw new Error(`Only ${pool.length} commanders available, but this draft needs ${needed}. Try smaller packs.`);
+  }
+  // Partial Fisher-Yates over a copy: only the first `needed` slots have to be settled.
+  const deck = [...pool];
+  for (let i = 0; i < needed; i++) {
+    const j = i + Math.floor(Math.random() * (deck.length - i));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return Array.from({ length: playerCount }, (_, p) => deck.slice(p * cardsPerPack, (p + 1) * cardsPerPack));
+}

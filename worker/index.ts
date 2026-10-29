@@ -24,6 +24,15 @@ import {
   handleListPoolGames,
   handlePutPoolGameProgress,
 } from "./poolGames";
+import {
+  handleActOnBanDraftPack,
+  handleCreateBanDraft,
+  handleDeleteBanDraft,
+  handleGetBanDraft,
+  handleInviteToBanDraft,
+  handleListBanDrafts,
+  handleStartBanDraft,
+} from "./banDraft";
 
 export type { Env };
 
@@ -73,6 +82,24 @@ export default {
         if (!action && method === "DELETE") return handleDeletePoolGame(request, env, gameId);
         if (action === "progress" && method === "PUT") return handlePutPoolGameProgress(request, env, gameId);
         if (action === "invite" && method === "POST") return handleInviteToPoolGame(request, env, gameId);
+      }
+    }
+
+    if (pathname === "/api/ban-drafts") {
+      if (method === "GET") return handleListBanDrafts(request, env);
+      if (method === "POST") return handleCreateBanDraft(request, env);
+    }
+    // Same segment-matched shape as the pool-game routes above.
+    if (pathname.startsWith("/api/ban-drafts/")) {
+      const segments = pathname.slice("/api/ban-drafts/".length).split("/");
+      const gameId = segments[0];
+      const action = segments[1];
+      if (gameId && segments.length <= 2) {
+        if (!action && method === "GET") return handleGetBanDraft(request, env, gameId);
+        if (!action && method === "DELETE") return handleDeleteBanDraft(request, env, gameId);
+        if (action === "start" && method === "POST") return handleStartBanDraft(request, env, gameId);
+        if (action === "act" && method === "POST") return handleActOnBanDraftPack(request, env, gameId);
+        if (action === "invite" && method === "POST") return handleInviteToBanDraft(request, env, gameId);
       }
     }
 

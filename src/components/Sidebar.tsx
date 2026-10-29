@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useGame, type Screen } from "../store/useGame";
 import { useAuth } from "../store/useAuth";
 import { useTour } from "../store/useTour";
-import { IconChevron, IconCompass, IconDeck, IconFlag, IconLobby, IconPack, IconSettings, IconTable, IconUser } from "./icons";
+import { IconChevron, IconCompass, IconDeck, IconFlag, IconLobby, IconPack, IconPass, IconSettings, IconTable, IconUser } from "./icons";
 import ReportModal from "./ReportModal";
 
 const NAV: { id: Screen; label: string; icon: (props: { size?: number }) => JSX.Element }[] = [
   { id: "lobby", label: "Lobby", icon: IconLobby },
   { id: "deckbuilder", label: "Deck Builder", icon: IconDeck },
   { id: "sealed", label: "Sealed Pool", icon: IconPack },
+  { id: "bandraft", label: "Commander Draft", icon: IconPass },
   { id: "table", label: "Game Table", icon: IconTable },
   { id: "settings", label: "Settings", icon: IconSettings },
 ];

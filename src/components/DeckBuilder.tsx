@@ -3,6 +3,7 @@ import { useGame } from "../store/useGame";
 import { useInspector } from "../store/useInspector";
 import { parseDecklistText, searchLive, serializeDecklist, fetchCardByName, fetchCardsByNames, BASIC_LAND_NAMES, BASIC_LAND_MANA } from "../lib/scryfall";
 import DeckInspect from "./DeckInspect";
+import { copyText } from "../lib/clipboard";
 import type { DeckEntry } from "../lib/deckStats";
 import { newId } from "../lib/reducer";
 import type { CardData, Deck, DeckCard } from "../lib/types";
@@ -59,6 +60,8 @@ export default function DeckBuilder() {
   const [commanders, setCommanders] = useState<string[]>([]);
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");
+  const [showExport, setShowExport] = useState(false);
+  const [exportCopied, setExportCopied] = useState<boolean | null>(null);
   const [inspecting, setInspecting] = useState(false);
   const [resolvingDeck, setResolvingDeck] = useState(false);
   const [basicQty, setBasicQty] = useState(8);
@@ -237,8 +240,24 @@ export default function DeckBuilder() {
     setImportText("");
   }
 
-  function handleExport() {
-    navigator.clipboard?.writeText(serializeDecklist(deckCards));
+  const exportText = serializeDecklist(deckCards);
+
+  /**
+   * Shows the list as well as copying it. The copy alone used to be the whole
+   * feature, which meant a success and a silent failure looked exactly the same —
+   * nothing moved on screen either way.
+   */
+  async function handleExport() {
+    if (showExport) {
+      setShowExport(false);
+      return;
+    }
+    setShowExport(true);
+    setExportCopied(await copyText(exportText));
+  }
+
+  async function recopyExport() {
+    setExportCopied(await copyText(exportText));
   }
 
   return (
@@ -462,8 +481,35 @@ export default function DeckBuilder() {
                 {resolvingDeck ? "Loading cards…" : "Inspect deck"}
               </button>
               <button className="btn" onClick={() => setShowImport((v) => !v)}>Import list</button>
-              <button className="btn" onClick={handleExport}>Export list</button>
+              <button
+                className="btn"
+                onClick={handleExport}
+                disabled={deckCards.length === 0}
+                title={deckCards.length === 0 ? "Add some cards first" : "Copy this decklist as text"}
+              >
+                Export list
+              </button>
             </div>
+
+            {showExport && (
+              <div className="import-box">
+                <textarea
+                  rows={6}
+                  readOnly
+                  value={exportText}
+                  onFocus={(e) => e.currentTarget.select()}
+                  aria-label="Decklist as text"
+                />
+                <div className="actions">
+                  <button className="btn primary" onClick={recopyExport}>Copy to clipboard</button>
+                  <button className="btn" onClick={() => setShowExport(false)}>Close</button>
+                </div>
+                {exportCopied === true && <p className="hint export-ok">Copied — {total} cards.</p>}
+                {exportCopied === false && (
+                  <p className="hint">Couldn't reach the clipboard. Select the text above and copy it manually.</p>
+                )}
+              </div>
+            )}
 
             {showImport && (
               <div className="import-box">
